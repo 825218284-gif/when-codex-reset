@@ -51,7 +51,7 @@ main { position: relative; min-height: 100vh; overflow: hidden; }
 .probability-card strong { display: block; margin-top: 13px; color: var(--mint-deep); font-size: clamp(40px, 4vw, 52px); letter-spacing: -.08em; line-height: .9; }
 .probability-card.watch strong { color: #a66a1e; }
 .probability-card.high strong { color: #b0394a; }
-.signal-panel span { display: block; margin-top: 8px; color: #72808d; font-size: 10px; line-height: 1.45; }
+.signal-panel > article > span { display: block; margin-top: 8px; color: #72808d; font-size: 10px; line-height: 1.45; }
 .probability-card a { color: inherit; text-decoration: none; }
 .probability-card a:hover { color: var(--mint-deep); text-decoration: underline; }
 .latest-card p { font-size: 12px; }
