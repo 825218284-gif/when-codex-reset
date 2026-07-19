@@ -124,7 +124,11 @@ main { position: relative; min-height: 100vh; overflow: hidden; }
 .model-card-grid { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 10px; margin-top: 18px; }
 .model-card { position: relative; min-height: 111px; overflow: hidden; padding: 16px 15px 14px; border: 1px solid #d9e2dd; border-radius: 13px; color: var(--ink); background: rgba(255,255,255,.68); text-align: left; transition: border-color 180ms ease, background 180ms ease, box-shadow 180ms ease, transform 180ms ease; }
 .model-card::before { position: absolute; top: 0; right: 0; left: 0; height: 4px; background: var(--model-color); content: ""; }
-.model-card:hover { border-color: var(--model-color); background: #fff; transform: translateY(-2px); }
+.model-card:hover { background: #fff; transform: translateY(-2px); }
+.model-card:not(.is-selected) { border-color: #e1e7e4; opacity: .64; }
+.model-card:not(.is-selected)::before { background: #aeb8b5; }
+.model-card:not(.is-selected) .model-card-body > strong { color: #88959c; }
+.model-card:not(.is-selected):hover { border-color: #bfcac4; opacity: .82; }
 .model-card.is-selected { border-color: var(--model-color); background: #fff; box-shadow: 0 10px 23px rgba(26, 44, 54, .09); }
 .model-card-label { display: block; overflow: hidden; color: #61717e; font-size: 11px; font-weight: 700; letter-spacing: -.02em; text-overflow: ellipsis; white-space: nowrap; }
 .model-card-body { display: flex; align-items: end; justify-content: space-between; gap: 8px; margin-top: 13px; }
@@ -151,7 +155,7 @@ main { position: relative; min-height: 100vh; overflow: hidden; }
 .model-curve-grid { stroke: #e5ebe7; stroke-width: 1; }
 .model-curve-axis { stroke: #cdd8d1; stroke-width: 1; }
 .model-curve-y-label, .model-curve-x-label { fill: #87939e; font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 10px; }
-.model-curve-series { opacity: .26; transition: opacity 220ms ease; }
+.model-curve-series { opacity: .31; transition: opacity 220ms ease; }
 .model-curve-series.is-selected { opacity: 1; }
 .model-curve-line { fill: none; stroke-width: 1.65; stroke-linecap: round; stroke-linejoin: round; transition: d 260ms ease, stroke-width 200ms ease, opacity 200ms ease; }
 .model-curve-series.is-selected .model-curve-line { stroke-width: 3.1; }

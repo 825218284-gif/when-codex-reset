@@ -11,7 +11,7 @@ const metricMeta: Record<ModelMetric, { label: string; unit: string }> = {
   value: { label: "性价比", unit: "IQ / USD" },
 };
 
-const RESET_RADAR_URL = "https://codexresetradar.com/";
+const CODEX_RESETS_URL = "https://codex-resets.com/";
 const CODEX_RADAR_URL = "https://codexradar.com/";
 
 function modelColor(id: string) {
@@ -358,6 +358,7 @@ function ModelComparisonChart({
           {series.map((item) => {
             const selected = item.id === selectedSeries?.id;
             const color = modelColor(item.id);
+            const renderColor = selected ? color : "#8c989f";
             const path = pathFor(item);
             const dash = modelDash(item.id);
             return (
@@ -366,7 +367,7 @@ function ModelComparisonChart({
                   <path
                     className="model-curve-line"
                     d={path}
-                    stroke={color}
+                    stroke={renderColor}
                     strokeDasharray={dash}
                   />
                 ) : null}
@@ -381,7 +382,7 @@ function ModelComparisonChart({
                       className="model-curve-dot"
                       cx={pointX}
                       cy={pointY}
-                      fill={color}
+                      fill={renderColor}
                       r={selected ? 4.3 : 3.1}
                       key={`${item.id}-${point.at}`}
                       onClick={() => onSelect(item.id)}
@@ -389,7 +390,7 @@ function ModelComparisonChart({
                         label: shortModelLabel(item.label),
                         at: point.at,
                         value,
-                        color,
+                        color: renderColor,
                         left: Math.min(86, Math.max(14, (pointX / width) * 100)),
                         top: Math.min(78, Math.max(12, (pointY / height) * 100)),
                       })}
@@ -501,7 +502,7 @@ export default function Dashboard() {
             ) : null}
           </article>
         </section>
-        <SourceCaption href={RESET_RADAR_URL} label="Codex Reset Radar" />
+        <SourceCaption href={CODEX_RESETS_URL} label="Codex Resets" />
 
         {error ? <p className="error-message">{error}</p> : null}
 
@@ -509,20 +510,20 @@ export default function Dashboard() {
           <div className="section-heading">
             <div>
               <p className="eyebrow">CONFIRMED HISTORY</p>
-              <h2 id="timeline-title">硬重置时间轴</h2>
+              <h2 id="timeline-title">额度重置时间轴</h2>
             </div>
             <span>北京时间 {formatCheckedAt(data?.generatedAt)} 更新</span>
           </div>
 
           {loading && !data ? <div className="timeline-loading"><i /><i /><i /></div> : null}
-          {!loading && !data?.history.length ? <div className="empty-state">暂未读取到可展示的硬重置历史。</div> : null}
+          {!loading && !data?.history.length ? <div className="empty-state">暂未读取到可展示的额度重置历史。</div> : null}
           <ol className="timeline">
             {data?.history.map((event, index) => (
               <li key={event.id}>
                 <div className="timeline-node" aria-hidden="true"><span /></div>
                 <time>{event.date}</time>
                 <div className="timeline-event">
-                  <span>HARD RESET · 已确认</span>
+                  <span>RESET · 已记录</span>
                   <h3>{event.title}</h3>
                   <a href={event.sourceUrl} target="_blank" rel="noreferrer">原始公告 ↗</a>
                 </div>
@@ -530,7 +531,7 @@ export default function Dashboard() {
               </li>
             ))}
           </ol>
-          <SourceCaption href={RESET_RADAR_URL} label="Codex Reset Radar" />
+          <SourceCaption href={CODEX_RESETS_URL} label="Codex Resets" />
         </section>
 
         <section className="chart-section" aria-labelledby="quota-title">
@@ -629,7 +630,7 @@ export default function Dashboard() {
         </section>
 
         <footer>
-          <p>48 小时概率是公开信号评估，不是 OpenAI 的承诺；个人账户的滚动限额请以 Codex 设置页为准。</p>
+          <p>若来源未提供未来 48 小时概率，页面不会自行推测；个人账户的滚动限额请以 Codex 设置页为准。</p>
           <div>
             {data?.sources.map((source) => (
               <a href={source.url} target="_blank" rel="noreferrer" key={source.name}>

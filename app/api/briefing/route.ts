@@ -13,7 +13,7 @@ export const dynamic = "force-dynamic";
 
 const CODEX_RADAR_API = "https://codexradar.com/current.json";
 const CODEX_RADAR_SITE = "https://codexradar.com/";
-const RESET_RADAR_SITE = "https://codexresetradar.com/";
+const CODEX_RESETS_SITE = "https://codex-resets.com/";
 
 type UnknownRecord = Record<string, unknown>;
 
@@ -47,103 +47,66 @@ function plainText(value: string) {
   return decodeHtml(value.replace(/<[^>]+>/g, " ").replace(/\s+/g, " ")).trim();
 }
 
-function readEmbeddedNumber(html: string, key: string) {
-  const safeKey = key.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
-  const candidates = [
-    new RegExp(`"${safeKey}":(\\d+(?:\\.\\d+)?)`),
-    new RegExp(String.raw`\\"${safeKey}\\":(\d+(?:\.\d+)?)`),
-  ];
-  for (const candidate of candidates) {
-    const value = asNumber(html.match(candidate)?.[1]);
-    if (value !== null) return value;
-  }
-  return null;
+function formatResetTimelineTime(value: string) {
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return value;
+  const parts = new Intl.DateTimeFormat("en-GB", {
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+    hour: "2-digit",
+    minute: "2-digit",
+    hour12: false,
+    timeZone: "Asia/Shanghai",
+  }).formatToParts(date);
+  const pick = (type: Intl.DateTimeFormatPartTypes) => parts.find((part) => part.type === type)?.value ?? "";
+  return `${pick("year")}.${pick("month")}.${pick("day")} ${pick("hour")}:${pick("minute")}`;
 }
 
-function readEmbeddedString(html: string, key: string) {
-  const safeKey = key.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
-  const candidates = [
-    new RegExp(`"${safeKey}":"([^"\\\\]+)"`),
-    new RegExp(String.raw`\\"${safeKey}\\":\\"([^"\\]+)\\"`),
-  ];
-  for (const candidate of candidates) {
-    const value = html.match(candidate)?.[1];
-    if (value) return decodeHtml(value);
-  }
-  return "";
+function resetTitle(text: string) {
+  const value = plainText(text);
+  if (/banked reset/i.test(value)) return "已发放可自行使用的额度重置";
+  if (/all paid|all plans|all accounts|everyone|all .*users/i.test(value)) return "全体用户额度重置";
+  if (/plus\s*(?:&|and)?\s*pro/i.test(value)) return "Plus / Pro 额度重置";
+  if (/full reset/i.test(value)) return "全量额度重置";
+  return value.length > 58 ? `${value.slice(0, 58)}…` : value || "已记录额度重置";
 }
 
-function parseHardResetHistory(html: string): HardResetEvent[] {
-  const results: HardResetEvent[] = [];
-  const anchors = html.matchAll(/<a\b([^>]*)>([\s\S]*?)<\/a>/gi);
+function parseCodexResets(html: string) {
+  const history: HardResetEvent[] = [];
+  const items = html.matchAll(/<li\b[^>]*class=["'][^"']*\blog-item\b[^"']*["'][^>]*>([\s\S]*?)<\/li>/gi);
 
-  for (const anchor of anchors) {
-    const attributes = anchor[1];
-    const body = anchor[2];
-    if (!/class=["'][^"']*\bhistory-row\b/i.test(attributes)) continue;
-
-    const date = body.match(/<time[^>]*>([^<]+)<\/time>/i)?.[1]?.trim();
-    const title = body.match(/<strong[^>]*>([^<]+)<\/strong>/i)?.[1]?.trim();
-    const spans = [...body.matchAll(/<span(?:\s[^>]*)?>([^<]+)<\/span>/gi)].map((match) =>
-      plainText(match[1]),
-    );
-    const kind = spans.at(-1) ?? "";
-    const sourceUrl = attributes.match(/href=["']([^"']+)["']/i)?.[1] ?? RESET_RADAR_SITE;
-
-    if (!date || !title || !/hard\s+reset/i.test(kind)) continue;
-    results.push({
-      id: `${date}-${title}`.toLowerCase().replace(/[^a-z0-9]+/g, "-"),
-      date,
-      title: plainText(title),
+  for (const [index, item] of [...items].entries()) {
+    const body = item[1];
+    const occurredAt = body.match(/data-datetime=["']([^"']+)["']/i)?.[1];
+    const sourceUrl = [...body.matchAll(/<a\b([^>]*)>/gi)]
+      .find((anchor) => /class=["'][^"']*\blog-item-link\b/i.test(anchor[1]))?.[1]
+      ?.match(/href=["']([^"']+)["']/i)?.[1] ?? CODEX_RESETS_SITE;
+    const text = body.match(/<p\b[^>]*class=["'][^"']*\blog-item-text\b[^"']*["'][^>]*>([\s\S]*?)<\/p>/i)?.[1];
+    if (!occurredAt || !text) continue;
+    history.push({
+      id: sourceUrl.split("/").at(-1) || `reset-${index + 1}`,
+      date: formatResetTimelineTime(occurredAt),
+      title: resetTitle(text),
       sourceUrl,
     });
   }
 
-  return results;
-}
-
-function parseResetRadar(html: string) {
-  const history = parseHardResetHistory(html);
-  const visibleText = plainText(
-    html
-      .replace(/<script[\s\S]*?<\/script>/gi, " ")
-      .replace(/<style[\s\S]*?<\/style>/gi, " "),
-  );
-  const visibleProbability = asNumber(
-    visibleText.match(/Next 48h reset chance\s+(\d+(?:\.\d+)?)%/i)?.[1],
-  );
-  const probability = readEmbeddedNumber(html, "next48hProbability") ?? visibleProbability;
-  const resetAt = readEmbeddedString(html, "resetAt");
-  const resetSource = readEmbeddedString(html, "resetSource") || history[0]?.sourceUrl || RESET_RADAR_SITE;
+  const hero = html.match(/<span\b[^>]*class=["'][^"']*\bhero-figure\b[^"']*["'][^>]*>/i)?.[0] ?? "";
+  const lastResetAt = hero.match(/data-datetime=["']([^"']+)["']/i)?.[1] ?? null;
+  const generatedNode = html.match(/<[^>]*data-role=["']generated-at["'][^>]*>/i)?.[0] ?? "";
+  const generatedAt = generatedNode.match(/data-datetime=["']([^"']+)["']/i)?.[1] ?? null;
+  const totalResets = asNumber(html.match(/<dt>\s*Total resets\s*<\/dt>[\s\S]*?<dd[^>]*>\s*(\d+)/i)?.[1]) ?? history.length;
   const latest = history[0];
-  const verdict = /\bYES\s*[—-]/i.test(visibleText)
-    ? "已确认新的硬重置信号"
-    : /\bNO\s*[—-]/i.test(visibleText)
-      ? "暂无新的已确认硬重置"
-      : "正在核验重置信号";
 
   return {
+    generatedAt,
     history,
-    probability,
-    verdict,
+    totalResets,
+    verdict: latest ? "最近一次额度重置已记录" : "正在读取额度重置记录",
     latestConfirmed: latest
-      ? { title: latest.title, occurredAt: resetAt || null, sourceUrl: resetSource }
+      ? { title: latest.title, occurredAt: lastResetAt, sourceUrl: latest.sourceUrl }
       : null,
-  };
-}
-
-function makeFallbackFromCodexRadar(radar: UnknownRecord) {
-  const window = asRecord(radar.window);
-  const prediction = asRecord(radar.prediction);
-  const probability = asNumber(prediction.probability_48h);
-  const resetOpen = window.open === true;
-
-  return {
-    probability: probability === null ? null : Math.round(probability * 100),
-    verdict: resetOpen ? "公开窗口显示正在进行" : "暂无开放中的公开重置窗口",
-    detail: resetOpen
-      ? "请回到原始公告确认适用范围。"
-      : "个人滚动限额仍应以 Codex 设置页为准。",
   };
 }
 
@@ -267,15 +230,15 @@ function collectQuotaSnapshot(radar: UnknownRecord): QuotaSnapshotRow[] {
 
 export async function GET() {
   const [resetResult, codexResult] = await Promise.allSettled([
-    fetch(RESET_RADAR_SITE, {
+    fetch(CODEX_RESETS_SITE, {
       headers: {
         accept: "text/html",
-        "user-agent": "Codex-Reset-Timeline/1.0 (public-source summary)",
+        "user-agent": "Codex-Reset-Timeline/1.0 (source mirror)",
       },
       cache: "no-store",
     }).then(async (response) => {
-      if (!response.ok) throw new Error(`Reset Radar returned ${response.status}`);
-      return parseResetRadar(await response.text());
+      if (!response.ok) throw new Error(`Codex Resets returned ${response.status}`);
+      return parseCodexResets(await response.text());
     }),
     fetch(CODEX_RADAR_API, {
       headers: { accept: "application/json" },
@@ -286,26 +249,22 @@ export async function GET() {
     }),
   ]);
 
-  const resetRadar = resetResult.status === "fulfilled" ? resetResult.value : null;
+  const codexResets = resetResult.status === "fulfilled" ? resetResult.value : null;
   const codexRadar = codexResult.status === "fulfilled" ? codexResult.value : null;
-  const fallback = codexRadar ? makeFallbackFromCodexRadar(codexRadar) : null;
   const briefing: ResetBriefing = {
-    generatedAt: new Date().toISOString(),
+    generatedAt: codexResets?.generatedAt ?? new Date().toISOString(),
     sources: [
-      { name: "Codex Reset Radar", url: RESET_RADAR_SITE, status: resetRadar ? "live" : "unavailable" },
+      { name: "Codex Resets", url: CODEX_RESETS_SITE, status: codexResets ? "live" : "unavailable" },
       { name: "Codex 雷达", url: CODEX_RADAR_SITE, status: codexRadar ? "live" : "unavailable" },
     ],
-    verdict: resetRadar?.verdict ?? fallback?.verdict ?? "暂时无法核验",
-    verdictDetail: resetRadar
-      ? "只把有可追溯原始来源的事件视为已确认。"
-      : fallback?.detail ?? "请稍后刷新，或直接打开来源站点。",
-    probability48h: resetRadar?.probability ?? fallback?.probability ?? null,
-    probabilitySource:
-      resetRadar?.probability !== null && resetRadar?.probability !== undefined
-        ? "Codex Reset Radar 信号评估"
-        : "Codex 雷达公开摘要",
-    latestConfirmed: resetRadar?.latestConfirmed ?? null,
-    history: resetRadar?.history ?? [],
+    verdict: codexResets?.verdict ?? "暂时无法核验",
+    verdictDetail: codexResets
+      ? `Codex Resets 已记录 ${codexResets.totalResets} 次额度重置；按 @thsottiaux 的 X 公告自动分类。`
+      : "请稍后刷新，或直接打开来源站点。",
+    probability48h: null,
+    probabilitySource: "Codex Resets 未提供未来 48 小时重置概率",
+    latestConfirmed: codexResets?.latestConfirmed ?? null,
+    history: codexResets?.history ?? [],
     quotaUpdatedAt: codexRadar
       ? asString(asRecord(asRecord(codexRadar.model_iq).quota_radar).updated_at) || null
       : null,
@@ -318,7 +277,7 @@ export async function GET() {
   };
 
   return Response.json(briefing, {
-    status: resetRadar || codexRadar ? 200 : 502,
+    status: codexResets || codexRadar ? 200 : 502,
     headers: {
       "Cache-Control": "public, max-age=120, s-maxage=300, stale-while-revalidate=600",
     },
