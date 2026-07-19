@@ -13,6 +13,31 @@ export interface HardResetEvent {
   sourceUrl: string;
 }
 
+export interface TrendPoint {
+  at: string;
+  value: number | null;
+}
+
+export interface QuotaTrendSeries {
+  id: string;
+  label: string;
+  unit: string;
+  points: TrendPoint[];
+}
+
+export interface ModelTrendPoint {
+  at: string;
+  score: number | null;
+  cost: number | null;
+  value: number | null;
+}
+
+export interface ModelTrendSeries {
+  id: string;
+  label: string;
+  points: ModelTrendPoint[];
+}
+
 export interface ResetBriefing {
   generatedAt: string;
   sources: ResetSource[];
@@ -26,4 +51,6 @@ export interface ResetBriefing {
     sourceUrl: string;
   } | null;
   history: HardResetEvent[];
+  quotaTrends: QuotaTrendSeries[];
+  modelTrends: ModelTrendSeries[];
 }

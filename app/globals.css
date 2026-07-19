@@ -78,6 +78,32 @@ main { position: relative; min-height: 100vh; overflow: hidden; }
 @keyframes pulse { to { background-position: -200% 0; } }
 .empty-state { padding: 50px 0; color: var(--muted); font-size: 13px; text-align: center; }
 
+.chart-section { padding: 0 0 84px; }
+.chart-heading { padding-top: 8px; }
+.chart-controls { display: flex; flex-wrap: wrap; gap: 7px; margin: 21px 0 12px; }
+.chart-chip { min-height: 31px; padding: 0 11px; border: 1px solid transparent; border-radius: 8px; color: #71808e; background: transparent; font-size: 11px; transition: background 160ms ease, border-color 160ms ease, color 160ms ease; }
+.chart-chip:hover { color: var(--ink); background: rgba(255,255,255,.62); }
+.chart-chip.is-active { border-color: #c8d5ce; color: var(--ink); background: #fff; box-shadow: 0 2px 7px rgba(24,44,55,.05); }
+.curve-figure { margin: 0; padding: 13px 0 0; }
+.curve-figure figcaption { display: flex; align-items: baseline; gap: 9px; padding: 0 21px 8px 57px; }
+.curve-figure figcaption span { color: #73818f; font-size: 11px; }
+.curve-figure figcaption strong { color: var(--ink); font-size: 18px; letter-spacing: -.045em; }
+.curve-figure figcaption small { color: #8a96a1; font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 10px; }
+.curve-figure svg { display: block; width: 100%; height: auto; overflow: visible; }
+.curve-grid { stroke: #e5ebe7; stroke-width: 1; }
+.curve-axis { stroke: #cdd8d1; stroke-width: 1; }
+.curve-y-label, .curve-x-label { fill: #87939e; font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 10px; }
+.curve-line { fill: none; stroke: var(--curve-color); stroke-width: 2.4; stroke-linecap: round; stroke-linejoin: round; }
+.curve-dot { fill: var(--curve-color); stroke: var(--paper); stroke-width: 2.2; }
+.curve-end-label { fill: #536271; font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 10px; font-weight: 700; }
+.chart-note { max-width: 690px; margin: 4px 0 0; color: #788692; font-size: 11px; line-height: 1.7; }
+.model-section { padding-top: 2px; }
+.model-controls { display: flex; align-items: end; justify-content: space-between; gap: 18px; margin: 21px 0 12px; }
+.model-controls .chart-controls { margin: 0; }
+.model-select { display: grid; min-width: min(100%, 285px); gap: 6px; color: #778592; font-size: 10px; }
+.model-select select { height: 35px; min-width: 260px; padding: 0 31px 0 10px; border: 1px solid #d5ded9; border-radius: 8px; outline: none; color: var(--ink); background: rgba(255,255,255,.78); font-size: 12px; }
+.model-select select:focus { border-color: var(--mint); box-shadow: 0 0 0 3px rgba(73,197,161,.12); }
+
 footer { display: grid; gap: 12px; padding: 21px 0 34px; border-top: 1px solid var(--line); color: #74818f; font-size: 11px; line-height: 1.65; }
 footer p { max-width: 650px; margin: 0; }
 footer div { display: flex; flex-wrap: wrap; gap: 15px; }
@@ -105,4 +131,9 @@ footer small { color: #83909c; font-family: ui-monospace, SFMono-Regular, Menlo,
   .timeline-node { width: 28px; height: 28px; }
   .timeline::before { left: 13px; }
   .timeline-event h3 { font-size: 16px; }
+  .chart-section { padding-bottom: 65px; }
+  .curve-figure figcaption { padding-left: 47px; }
+  .curve-y-label, .curve-x-label, .curve-end-label { font-size: 11px; }
+  .model-controls { align-items: stretch; flex-direction: column; }
+  .model-select, .model-select select { width: 100%; min-width: 0; }
 }

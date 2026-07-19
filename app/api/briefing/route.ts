@@ -1,4 +1,11 @@
-import type { HardResetEvent, ResetBriefing } from "../../lib/briefing";
+import type {
+  HardResetEvent,
+  ModelTrendPoint,
+  ModelTrendSeries,
+  QuotaTrendSeries,
+  ResetBriefing,
+  TrendPoint,
+} from "../../lib/briefing";
 
 export const runtime = "edge";
 export const dynamic = "force-dynamic";
@@ -20,6 +27,7 @@ function asString(value: unknown, fallback = ""): string {
 }
 
 function asNumber(value: unknown): number | null {
+  if (value === null || value === undefined || value === "") return null;
   const parsed = typeof value === "number" ? value : Number(value);
   return Number.isFinite(parsed) ? parsed : null;
 }
@@ -45,8 +53,7 @@ function readEmbeddedNumber(html: string, key: string) {
     new RegExp(String.raw`\\"${safeKey}\\":(\d+(?:\.\d+)?)`),
   ];
   for (const candidate of candidates) {
-    const match = html.match(candidate)?.[1];
-    const value = asNumber(match);
+    const value = asNumber(html.match(candidate)?.[1]);
     if (value !== null) return value;
   }
   return null;
@@ -119,11 +126,7 @@ function parseResetRadar(html: string) {
     probability,
     verdict,
     latestConfirmed: latest
-      ? {
-          title: latest.title,
-          occurredAt: resetAt || null,
-          sourceUrl: resetSource,
-        }
+      ? { title: latest.title, occurredAt: resetAt || null, sourceUrl: resetSource }
       : null,
   };
 }
@@ -141,6 +144,85 @@ function makeFallbackFromCodexRadar(radar: UnknownRecord) {
       ? "请回到原始公告确认适用范围。"
       : "个人滚动限额仍应以 Codex 设置页为准。",
   };
+}
+
+function formatModelName(model: unknown, effort: unknown, fallback: string) {
+  const family = asString(model)
+    .replace(/^gpt-/i, "GPT-")
+    .replace(/-(sol|terra|luna)$/i, (_, name: string) => ` ${name[0].toUpperCase()}${name.slice(1).toLowerCase()}`);
+  const reasoning = asString(effort);
+  return family ? `${family}${reasoning ? ` ${reasoning}` : ""}` : fallback;
+}
+
+function modelPoint(raw: UnknownRecord): ModelTrendPoint | null {
+  const at = asString(raw.date);
+  if (!at) return null;
+  const score = asNumber(raw.score);
+  const cost = asNumber(raw.average_cost_usd);
+  return {
+    at,
+    score,
+    cost,
+    value: score !== null && cost !== null && cost > 0 ? score / cost : null,
+  };
+}
+
+function modelSeries(id: string, label: string, days: unknown, latest: UnknownRecord): ModelTrendSeries | null {
+  const points = (Array.isArray(days) ? days : [])
+    .map((day) => modelPoint(asRecord(day)))
+    .filter((point): point is ModelTrendPoint => point !== null);
+  const current = modelPoint(latest);
+  if (current) {
+    const index = points.findIndex((point) => point.at === current.at);
+    if (index >= 0) points[index] = current;
+    else points.push(current);
+  }
+  points.sort((a, b) => a.at.localeCompare(b.at));
+  return points.length ? { id, label, points } : null;
+}
+
+function collectModelTrends(radar: UnknownRecord): ModelTrendSeries[] {
+  const modelIq = asRecord(radar.model_iq);
+  const latest = asRecord(modelIq.latest);
+  const items: ModelTrendSeries[] = [];
+  const primary = modelSeries(
+    "gpt_56_sol_max",
+    formatModelName(latest.model, latest.reasoning_effort, "当前最高分配置"),
+    modelIq.recent_days,
+    latest,
+  );
+  if (primary) items.push(primary);
+
+  const comparisons = asRecord(modelIq.comparisons);
+  for (const [id, raw] of Object.entries(comparisons)) {
+    const entry = asRecord(raw);
+    const current = asRecord(entry.latest);
+    const label = asString(entry.label, formatModelName(current.model, current.reasoning_effort, id));
+    const series = modelSeries(id, label, entry.recent_days, current);
+    if (series) items.push(series);
+  }
+
+  return items.sort((a, b) => a.label.localeCompare(b.label));
+}
+
+function collectQuotaTrends(radar: UnknownRecord): QuotaTrendSeries[] {
+  const quotaRadar = asRecord(asRecord(radar.model_iq).quota_radar);
+  const rows = Array.isArray(quotaRadar.trend) ? quotaRadar.trend : [];
+  const definitions = [
+    { id: "pro20-7d", label: "20x Pro · 7d", field: "seven_d_20x", unit: "USD / 7d" },
+    { id: "pro5-5h", label: "5x Pro · 5h", field: "five_h_5x", unit: "USD / 5h" },
+    { id: "plus-5h", label: "Plus · 5h", field: "five_h_plus", unit: "USD / 5h" },
+  ];
+
+  return definitions
+    .map(({ id, label, field, unit }) => {
+      const points: TrendPoint[] = rows.map((row) => {
+        const item = asRecord(row);
+        return { at: asString(item.date), value: asNumber(item[field]) };
+      });
+      return { id, label, unit, points };
+    })
+    .filter((series) => series.points.some((point) => point.value !== null));
 }
 
 export async function GET() {
@@ -167,7 +249,6 @@ export async function GET() {
   const resetRadar = resetResult.status === "fulfilled" ? resetResult.value : null;
   const codexRadar = codexResult.status === "fulfilled" ? codexResult.value : null;
   const fallback = codexRadar ? makeFallbackFromCodexRadar(codexRadar) : null;
-  const probability = resetRadar?.probability ?? fallback?.probability ?? null;
   const briefing: ResetBriefing = {
     generatedAt: new Date().toISOString(),
     sources: [
@@ -178,12 +259,15 @@ export async function GET() {
     verdictDetail: resetRadar
       ? "只把有可追溯原始来源的事件视为已确认。"
       : fallback?.detail ?? "请稍后刷新，或直接打开来源站点。",
-    probability48h: probability,
-    probabilitySource: resetRadar?.probability !== null && resetRadar?.probability !== undefined
-      ? "Codex Reset Radar 信号评估"
-      : "Codex 雷达公开摘要",
+    probability48h: resetRadar?.probability ?? fallback?.probability ?? null,
+    probabilitySource:
+      resetRadar?.probability !== null && resetRadar?.probability !== undefined
+        ? "Codex Reset Radar 信号评估"
+        : "Codex 雷达公开摘要",
     latestConfirmed: resetRadar?.latestConfirmed ?? null,
     history: resetRadar?.history ?? [],
+    quotaTrends: codexRadar ? collectQuotaTrends(codexRadar) : [],
+    modelTrends: codexRadar ? collectModelTrends(codexRadar) : [],
   };
 
   return Response.json(briefing, {
