@@ -4,7 +4,6 @@ import { useEffect, useMemo, useState, type CSSProperties } from "react";
 import type { ModelTrendPoint, ModelTrendSeries, ResetBriefing, TrendPoint } from "./lib/briefing";
 
 type ModelMetric = "score" | "cost" | "value";
-type ContentMode = "compact" | "detailed";
 
 const metricMeta: Record<ModelMetric, { label: string; unit: string }> = {
   score: { label: "IQ", unit: "IQ" },
@@ -431,7 +430,6 @@ export default function Dashboard() {
   const [data, setData] = useState<ResetBriefing | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
-  const [contentMode, setContentMode] = useState<ContentMode>("compact");
   const [selectedModelIds, setSelectedModelIds] = useState<string[]>(["gpt_56_sol_max"]);
   const [metric, setMetric] = useState<ModelMetric>("score");
 
@@ -457,7 +455,6 @@ export default function Dashboard() {
 
   const probability = data?.probability48h;
   const tone = probabilityTone(probability);
-  const isCompact = contentMode === "compact";
   const quota = data?.quotaTrends.find((series) => series.id === "pro20-7d") ?? data?.quotaTrends[0];
   const modelTrends = data?.modelTrends ?? [];
   const knownSelectedModelIds = selectedModelIds.filter((id) => modelTrends.some((series) => series.id === id));
@@ -502,33 +499,13 @@ export default function Dashboard() {
             <span className="brand-signal" aria-hidden="true"><i /><i /><i /></span>
             <span>Codex 重置雷达</span>
           </a>
-          <div className="topbar-actions">
-            <div className="content-switch" role="group" aria-label="内容显示模式">
-              <button
-                className={isCompact ? "is-active" : ""}
-                type="button"
-                aria-pressed={isCompact}
-                onClick={() => setContentMode("compact")}
-              >
-                简化内容
-              </button>
-              <button
-                className={!isCompact ? "is-active" : ""}
-                type="button"
-                aria-pressed={!isCompact}
-                onClick={() => setContentMode("detailed")}
-              >
-                详细内容
-              </button>
-            </div>
-            <button className="refresh" onClick={() => void refresh()} disabled={loading}>
-              <span aria-hidden="true">↻</span>
-              {loading ? "更新中" : "刷新"}
-            </button>
-          </div>
+          <button className="refresh" onClick={() => void refresh()} disabled={loading}>
+            <span aria-hidden="true">↻</span>
+            {loading ? "更新中" : "刷新"}
+          </button>
         </nav>
 
-        <section className={`signal-panel${isCompact ? " is-compact" : ""}`} id="top" aria-label="重置信号摘要">
+        <section className="signal-panel" id="top" aria-label="重置信号摘要">
           <article className="latest-card">
             <p>最近一次重置</p>
             <strong className="latest-reset-time">
@@ -540,24 +517,21 @@ export default function Dashboard() {
               <a href={data.latestConfirmed.sourceUrl} target="_blank" rel="noreferrer">查看原始来源 ↗</a>
             ) : null}
           </article>
-          {!isCompact ? (
-            <article className={`probability-card ${tone}`}>
-              <p>未来 48 小时重置可能性</p>
-              <strong>{probability === null || probability === undefined ? "—" : `${probability}%`}</strong>
-              <span>
-                <a href={RESET_RADAR_URL} target="_blank" rel="noreferrer">
-                  {data?.probabilitySource ?? "正在读取公开来源"} ↗
-                </a>
-              </span>
-            </article>
-          ) : null}
+          <article className={`probability-card ${tone}`}>
+            <p>未来 48 小时重置可能性</p>
+            <strong>{probability === null || probability === undefined ? "—" : `${probability}%`}</strong>
+            <span>
+              <a href={RESET_RADAR_URL} target="_blank" rel="noreferrer">
+                {data?.probabilitySource ?? "正在读取公开来源"} ↗
+              </a>
+            </span>
+          </article>
         </section>
-        {!isCompact ? <SourceCaption href={CODEX_RESETS_URL} label="Codex Resets" /> : null}
+        <SourceCaption href={CODEX_RESETS_URL} label="Codex Resets" />
 
         {error ? <p className="error-message">{error}</p> : null}
 
-        {!isCompact ? (
-          <section className="timeline-section" aria-labelledby="timeline-title">
+        <section className="timeline-section" aria-labelledby="timeline-title">
             <div className="section-heading">
               <div>
                 <p className="eyebrow">CONFIRMED HISTORY</p>
@@ -590,14 +564,13 @@ export default function Dashboard() {
               })}
             </ol>
             <SourceCaption href={CODEX_RESETS_URL} label="Codex Resets" />
-          </section>
-        ) : null}
+        </section>
 
-        <section className={`chart-section${isCompact ? " compact-quota-section" : ""}`} aria-labelledby="quota-title">
+        <section className="chart-section" aria-labelledby="quota-title">
           <div className="section-heading chart-heading">
             <div>
-              <p className="eyebrow">{isCompact ? "PUBLIC QUOTA" : "PUBLIC QUOTA TREND"}</p>
-              <h2 id="quota-title">{isCompact ? "额度表格" : "额度雷达"}</h2>
+              <p className="eyebrow">PUBLIC QUOTA TREND</p>
+              <h2 id="quota-title">额度雷达</h2>
             </div>
             <span>{formatSourceUpdatedAt(data?.quotaUpdatedAt)} 更新</span>
           </div>
@@ -630,25 +603,20 @@ export default function Dashboard() {
               </table>
             </div>
           </div>
-          {!isCompact ? (
-            <>
-              <div className="quota-curve-heading">
-                <h3>20x Pro · 7d 额度变化</h3>
-                {quotaSummary ? (
-                  <span className={quotaSummary.delta >= 0 ? "is-up" : "is-down"}>
-                    {formatValue(quotaSummary.previous, "USD / 7d")} → {formatValue(quotaSummary.latest, "USD / 7d")} ({formatSignedValue(quotaSummary.delta, "USD / 7d")}{quotaSummary.percent === null ? "" : `，${quotaSummary.percent > 0 ? "+" : ""}${quotaSummary.percent.toFixed(1)}%`})
-                  </span>
-                ) : null}
-              </div>
-              {quota ? <CurveChart title={`${quota.label} 额度变化`} points={quota.points} unit={quota.unit} color="#49c5a1" /> : <div className="empty-state">等待额度趋势数据。</div>}
-              <p className="chart-note">仅展示一条可持续读取的 20x Pro 7d 公开曲线。</p>
-              <SourceCaption href={CODEX_RADAR_URL} label="Codex 雷达 codexradar.com" />
-            </>
-          ) : null}
+          <div className="quota-curve-heading">
+            <h3>20x Pro · 7d 额度变化</h3>
+            {quotaSummary ? (
+              <span className={quotaSummary.delta >= 0 ? "is-up" : "is-down"}>
+                {formatValue(quotaSummary.previous, "USD / 7d")} → {formatValue(quotaSummary.latest, "USD / 7d")} ({formatSignedValue(quotaSummary.delta, "USD / 7d")}{quotaSummary.percent === null ? "" : `，${quotaSummary.percent > 0 ? "+" : ""}${quotaSummary.percent.toFixed(1)}%`})
+              </span>
+            ) : null}
+          </div>
+          {quota ? <CurveChart title={`${quota.label} 额度变化`} points={quota.points} unit={quota.unit} color="#49c5a1" /> : <div className="empty-state">等待额度趋势数据。</div>}
+          <p className="chart-note">仅展示一条可持续读取的 20x Pro 7d 公开曲线。</p>
+          <SourceCaption href={CODEX_RADAR_URL} label="Codex 雷达 codexradar.com" />
         </section>
 
-        {!isCompact ? (
-          <section className="chart-section model-section" aria-labelledby="model-title">
+        <section className="chart-section model-section" aria-labelledby="model-title">
           <div className="section-heading chart-heading">
             <div>
               <p className="eyebrow">MODEL CURVES</p>
@@ -691,21 +659,18 @@ export default function Dashboard() {
           ) : <div className="empty-state">等待模型曲线数据。</div>}
           <p className="chart-note">性价比 = IQ ÷ 单任务平均价格，仅用于同一公开任务集内的相对比较。</p>
           <SourceCaption href={CODEX_RADAR_URL} label="Codex 雷达 codexradar.com" />
-          </section>
-        ) : null}
+        </section>
 
-        {!isCompact ? (
-          <footer>
-            <p>48 小时概率来自 Codex Reset Radar 的公开信号评估，不是 OpenAI 的承诺；个人账户的滚动限额请以 Codex 设置页为准。</p>
-            <div>
-              {data?.sources.map((source) => (
-                <a href={source.url} target="_blank" rel="noreferrer" key={source.name}>
-                  <i className={source.status} />{source.name} ↗
-                </a>
-              ))}
-            </div>
-          </footer>
-        ) : null}
+        <footer>
+          <p>48 小时概率来自 Codex Reset Radar 的公开信号评估，不是 OpenAI 的承诺；个人账户的滚动限额请以 Codex 设置页为准。</p>
+          <div>
+            {data?.sources.map((source) => (
+              <a href={source.url} target="_blank" rel="noreferrer" key={source.name}>
+                <i className={source.status} />{source.name} ↗
+              </a>
+            ))}
+          </div>
+        </footer>
       </div>
     </main>
   );
