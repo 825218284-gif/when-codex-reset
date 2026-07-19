@@ -493,11 +493,6 @@ export default function Dashboard() {
               </a>
             </span>
           </article>
-          <article className="verdict-card">
-            <p>当前核验结论</p>
-            <h2>{data?.verdict ?? (loading ? "正在核验" : "暂不可用")}</h2>
-            <span>{data?.verdictDetail ?? "仅显示有可追溯来源的事件"}</span>
-          </article>
           <article className="latest-card">
             <p>最近一次确认</p>
             <h2>{data?.latestConfirmed?.title ?? "等待来源响应"}</h2>

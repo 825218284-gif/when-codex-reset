@@ -41,7 +41,7 @@ main { position: relative; min-height: 100vh; overflow: hidden; }
 .hero h1 em { color: var(--violet); font-family: Georgia, "Songti SC", "STSong", serif; font-weight: 500; }
 .hero-copy { max-width: 430px; margin: 31px 0 0; color: var(--muted); font-size: 15px; line-height: 1.75; }
 
-.signal-panel { display: grid; grid-template-columns: .76fr 1fr 1.06fr; overflow: hidden; border: 1px solid var(--line); border-radius: 15px; background: rgba(255,255,255,.66); box-shadow: 0 12px 30px rgba(24, 44, 55, .04); }
+.signal-panel { display: grid; grid-template-columns: minmax(230px, .72fr) minmax(0, 1.28fr); overflow: hidden; border: 1px solid var(--line); border-radius: 15px; background: rgba(255,255,255,.66); box-shadow: 0 12px 30px rgba(24, 44, 55, .04); }
 .signal-panel article { min-height: 142px; padding: 16px 18px; border-right: 1px solid var(--line); }
 .signal-panel article:last-child { border-right: 0; }
 .signal-panel p { margin: 0; color: #71808e; font-size: 11px; }
@@ -54,9 +54,10 @@ main { position: relative; min-height: 100vh; overflow: hidden; }
 .signal-panel span { display: block; margin-top: 8px; color: #72808d; font-size: 10px; line-height: 1.45; }
 .probability-card a { color: inherit; text-decoration: none; }
 .probability-card a:hover { color: var(--mint-deep); text-decoration: underline; }
-.verdict-card h2, .latest-card h2 { margin: 11px 0 0; font-size: 17px; letter-spacing: -.05em; line-height: 1.22; }
-.latest-card h2 { font-size: 15px; }
-.latest-card a { display: inline-block; margin-top: 8px; color: var(--mint-deep); font-size: 10px; font-weight: 650; text-decoration: none; }
+.latest-card h2 { margin: 11px 0 0; font-size: clamp(20px, 2.2vw, 24px); letter-spacing: -.05em; line-height: 1.22; }
+.latest-card p { font-size: 12px; }
+.latest-card span { font-size: 11px; }
+.latest-card a { display: inline-block; margin-top: 8px; color: var(--mint-deep); font-size: 11px; font-weight: 650; text-decoration: none; }
 .latest-card a:hover { text-decoration: underline; }
 .error-message { margin: 18px 0 0; padding: 11px 13px; border: 1px solid #efd29d; border-radius: 9px; color: #8a5a17; background: #fff8e9; font-size: 12px; }
 .source-caption { margin: 7px 0 0; color: #82909b; font-size: 10px; line-height: 1.45; }
