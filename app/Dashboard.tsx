@@ -483,6 +483,14 @@ export default function Dashboard() {
         </nav>
 
         <section className="signal-panel" id="top" aria-label="重置信号摘要">
+          <article className="latest-card">
+            <p>最近一次重置</p>
+            <strong className="latest-reset-time">{formatBeijing(data?.latestConfirmed?.occurredAt)}</strong>
+            <span className="latest-timezone">北京时间</span>
+            {data?.latestConfirmed ? (
+              <a href={data.latestConfirmed.sourceUrl} target="_blank" rel="noreferrer">查看原始来源 ↗</a>
+            ) : null}
+          </article>
           <article className={`probability-card ${tone}`}>
             <p>未来 48 小时</p>
             <strong>{probability === null || probability === undefined ? "—" : `${probability}%`}</strong>
@@ -491,14 +499,6 @@ export default function Dashboard() {
                 {data?.probabilitySource ?? "正在读取公开来源"} ↗
               </a>
             </span>
-          </article>
-          <article className="latest-card">
-            <p>最近一次确认</p>
-            <h2>{data?.latestConfirmed?.title ?? "等待来源响应"}</h2>
-            <span>{formatBeijing(data?.latestConfirmed?.occurredAt)} 北京时间</span>
-            {data?.latestConfirmed ? (
-              <a href={data.latestConfirmed.sourceUrl} target="_blank" rel="noreferrer">查看原始来源 ↗</a>
-            ) : null}
           </article>
         </section>
         <SourceCaption href={CODEX_RESETS_URL} label="Codex Resets" />
