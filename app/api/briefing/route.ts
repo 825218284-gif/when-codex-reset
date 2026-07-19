@@ -14,6 +14,7 @@ export const dynamic = "force-dynamic";
 const CODEX_RADAR_API = "https://codexradar.com/current.json";
 const CODEX_RADAR_SITE = "https://codexradar.com/";
 const CODEX_RESETS_SITE = "https://codex-resets.com/";
+const RESET_RADAR_SITE = "https://codexresetradar.com/";
 
 type UnknownRecord = Record<string, unknown>;
 
@@ -45,6 +46,31 @@ function decodeHtml(value: string) {
 
 function plainText(value: string) {
   return decodeHtml(value.replace(/<[^>]+>/g, " ").replace(/\s+/g, " ")).trim();
+}
+
+function readEmbeddedNumber(html: string, key: string) {
+  const safeKey = key.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+  const candidates = [
+    new RegExp(`"${safeKey}":(\\d+(?:\\.\\d+)?)`),
+    new RegExp(String.raw`\\"${safeKey}\\":(\d+(?:\.\d+)?)`),
+  ];
+  for (const candidate of candidates) {
+    const value = asNumber(html.match(candidate)?.[1]);
+    if (value !== null) return value;
+  }
+  return null;
+}
+
+function parseResetRadarProbability(html: string) {
+  const visibleText = plainText(
+    html
+      .replace(/<script[\s\S]*?<\/script>/gi, " ")
+      .replace(/<style[\s\S]*?<\/style>/gi, " "),
+  );
+  const visibleProbability = asNumber(
+    visibleText.match(/Next 48h reset chance\s+(\d+(?:\.\d+)?)%/i)?.[1],
+  );
+  return readEmbeddedNumber(html, "next48hProbability") ?? visibleProbability;
 }
 
 function formatResetTimelineTime(value: string) {
@@ -229,7 +255,7 @@ function collectQuotaSnapshot(radar: UnknownRecord): QuotaSnapshotRow[] {
 }
 
 export async function GET() {
-  const [resetResult, codexResult] = await Promise.allSettled([
+  const [resetResult, probabilityResult, codexResult] = await Promise.allSettled([
     fetch(CODEX_RESETS_SITE, {
       headers: {
         accept: "text/html",
@@ -239,6 +265,16 @@ export async function GET() {
     }).then(async (response) => {
       if (!response.ok) throw new Error(`Codex Resets returned ${response.status}`);
       return parseCodexResets(await response.text());
+    }),
+    fetch(RESET_RADAR_SITE, {
+      headers: {
+        accept: "text/html",
+        "user-agent": "Codex-Reset-Probability/1.0 (public-source summary)",
+      },
+      cache: "no-store",
+    }).then(async (response) => {
+      if (!response.ok) throw new Error(`Codex Reset Radar returned ${response.status}`);
+      return parseResetRadarProbability(await response.text());
     }),
     fetch(CODEX_RADAR_API, {
       headers: { accept: "application/json" },
@@ -250,21 +286,25 @@ export async function GET() {
   ]);
 
   const codexResets = resetResult.status === "fulfilled" ? resetResult.value : null;
+  const resetRadarProbability = probabilityResult.status === "fulfilled" ? probabilityResult.value : null;
   const codexRadar = codexResult.status === "fulfilled" ? codexResult.value : null;
   const briefing: ResetBriefing = {
     generatedAt: codexResets?.generatedAt ?? new Date().toISOString(),
     sources: [
       { name: "Codex Resets", url: CODEX_RESETS_SITE, status: codexResets ? "live" : "unavailable" },
+      { name: "Codex Reset Radar", url: RESET_RADAR_SITE, status: resetRadarProbability !== null ? "live" : "unavailable" },
       { name: "Codex 雷达", url: CODEX_RADAR_SITE, status: codexRadar ? "live" : "unavailable" },
     ],
     verdict: codexResets?.verdict ?? "暂时无法核验",
     verdictDetail: codexResets
       ? `Codex Resets 已记录 ${codexResets.totalResets} 次额度重置；按 @thsottiaux 的 X 公告自动分类。`
       : "请稍后刷新，或直接打开来源站点。",
-    probability48h: null,
-    probabilitySource: "Codex Resets 未提供未来 48 小时重置概率",
+    probability48h: resetRadarProbability,
+    probabilitySource: resetRadarProbability === null
+      ? "Codex Reset Radar 暂未提供 48 小时概率"
+      : "Codex Reset Radar 48 小时评估",
     latestConfirmed: codexResets?.latestConfirmed ?? null,
-    history: codexResets?.history ?? [],
+    history: codexResets?.history.slice(0, 4) ?? [],
     quotaUpdatedAt: codexRadar
       ? asString(asRecord(asRecord(codexRadar.model_iq).quota_radar).updated_at) || null
       : null,
@@ -277,7 +317,7 @@ export async function GET() {
   };
 
   return Response.json(briefing, {
-    status: codexResets || codexRadar ? 200 : 502,
+    status: codexResets || resetRadarProbability !== null || codexRadar ? 200 : 502,
     headers: {
       "Cache-Control": "public, max-age=120, s-maxage=300, stale-while-revalidate=600",
     },

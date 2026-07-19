@@ -12,6 +12,7 @@ const metricMeta: Record<ModelMetric, { label: string; unit: string }> = {
 };
 
 const CODEX_RESETS_URL = "https://codex-resets.com/";
+const RESET_RADAR_URL = "https://codexresetradar.com/";
 const CODEX_RADAR_URL = "https://codexradar.com/";
 
 function modelColor(id: string) {
@@ -145,11 +146,11 @@ function CurveChart({
   color: string;
 }) {
   const width = 760;
-  const height = 260;
-  const left = 57;
-  const right = 21;
-  const top = 18;
-  const bottom = 38;
+  const height = 224;
+  const left = 50;
+  const right = 18;
+  const top = 14;
+  const bottom = 34;
   const plotWidth = width - left - right;
   const plotHeight = height - top - bottom;
   const valid = points
@@ -275,11 +276,11 @@ function ModelComparisonChart({
 }) {
   const [hovered, setHovered] = useState<HoveredModelPoint | null>(null);
   const width = 820;
-  const height = 338;
-  const left = 58;
-  const right = 28;
-  const top = 24;
-  const bottom = 47;
+  const height = 286;
+  const left = 54;
+  const right = 24;
+  const top = 18;
+  const bottom = 38;
   const plotWidth = width - left - right;
   const plotHeight = height - top - bottom;
   const dates = [...new Set(series.flatMap((item) => item.points.map((point) => point.at)))].sort((a, b) => a.localeCompare(b));
@@ -486,7 +487,11 @@ export default function Dashboard() {
           <article className={`probability-card ${tone}`}>
             <p>未来 48 小时</p>
             <strong>{probability === null || probability === undefined ? "—" : `${probability}%`}</strong>
-            <span>{data?.probabilitySource ?? "正在读取公开来源"}</span>
+            <span>
+              <a href={RESET_RADAR_URL} target="_blank" rel="noreferrer">
+                {data?.probabilitySource ?? "正在读取公开来源"} ↗
+              </a>
+            </span>
           </article>
           <article className="verdict-card">
             <p>当前核验结论</p>
@@ -630,7 +635,7 @@ export default function Dashboard() {
         </section>
 
         <footer>
-          <p>若来源未提供未来 48 小时概率，页面不会自行推测；个人账户的滚动限额请以 Codex 设置页为准。</p>
+          <p>48 小时概率来自 Codex Reset Radar 的公开信号评估，不是 OpenAI 的承诺；个人账户的滚动限额请以 Codex 设置页为准。</p>
           <div>
             {data?.sources.map((source) => (
               <a href={source.url} target="_blank" rel="noreferrer" key={source.name}>
