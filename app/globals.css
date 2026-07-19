@@ -55,7 +55,7 @@ main { position: relative; min-height: 100vh; overflow: hidden; }
 .probability-card a { color: inherit; text-decoration: none; }
 .probability-card a:hover { color: var(--mint-deep); text-decoration: underline; }
 .latest-card p { font-size: 12px; }
-.latest-reset-time { display: block; margin-top: 13px; color: #a66a1e; font-size: clamp(40px, 4vw, 52px); font-variant-numeric: tabular-nums; letter-spacing: -.08em; line-height: .9; }
+.latest-reset-time { display: flex; flex-wrap: wrap; align-items: baseline; gap: 14px; margin-top: 13px; color: #171717; font-size: clamp(40px, 4vw, 52px); font-variant-numeric: tabular-nums; letter-spacing: -.08em; line-height: .9; }
 .latest-card .latest-timezone { margin-top: 8px; font-size: 11px; }
 .latest-card a { display: inline-block; margin-top: 8px; color: var(--mint-deep); font-size: 11px; font-weight: 650; text-decoration: none; }
 .latest-card a:hover { text-decoration: underline; }

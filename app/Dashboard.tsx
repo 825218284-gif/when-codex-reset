@@ -16,10 +16,15 @@ const RESET_RADAR_URL = "https://codexresetradar.com/";
 const CODEX_RADAR_URL = "https://codexradar.com/";
 
 function modelColor(id: string) {
-  if (id.includes("_sol_")) return "#d89a19";
-  if (id.includes("_terra_")) return "#4286e8";
-  if (id.includes("_luna_")) return "#dc6680";
-  if (id.includes("gpt_55")) return "#27aa70";
+  if (id.includes("_sol_max") || id.includes("_sol_xhigh")) return "#f5c518";
+  if (id.includes("_sol_high")) return "#e98500";
+  if (id.includes("_sol_medium")) return "#a64b16";
+  if (id.includes("_sol_low")) return "#804016";
+  if (id.includes("_terra_max")) return "#5b9df1";
+  if (id.includes("_terra_high")) return "#2d67e7";
+  if (id.includes("_luna_max")) return "#ff6f8a";
+  if (id.includes("_luna_high")) return "#e61f4d";
+  if (id.includes("gpt_55")) return "#21c66a";
   return "#806ef2";
 }
 
@@ -40,10 +45,10 @@ function latestModelPoint(series: ModelTrendSeries): ModelTrendPoint | null {
 }
 
 function formatBeijing(value: string | null | undefined) {
-  if (!value) return "时间待来源补全";
+  if (!value) return { date: "时间待来源补全", time: "" };
   const date = new Date(value);
-  if (Number.isNaN(date.getTime())) return value;
-  return new Intl.DateTimeFormat("zh-CN", {
+  if (Number.isNaN(date.getTime())) return { date: value, time: "" };
+  const [datePart, timePart] = new Intl.DateTimeFormat("zh-CN", {
     year: "numeric",
     month: "2-digit",
     day: "2-digit",
@@ -51,7 +56,8 @@ function formatBeijing(value: string | null | undefined) {
     minute: "2-digit",
     hour12: false,
     timeZone: "Asia/Shanghai",
-  }).format(date).replace(/\//g, ".");
+  }).format(date).replace(/\//g, ".").split(/\s+/);
+  return { date: datePart ?? "时间待来源补全", time: timePart ?? "" };
 }
 
 function formatSourceUpdatedAt(value?: string | null) {
@@ -265,13 +271,13 @@ type HoveredModelPoint = {
 function ModelComparisonChart({
   series,
   metric,
-  selectedId,
-  onSelect,
+  selectedIds,
+  onToggle,
 }: {
   series: ModelTrendSeries[];
   metric: ModelMetric;
-  selectedId: string;
-  onSelect: (id: string) => void;
+  selectedIds: string[];
+  onToggle: (id: string) => void;
 }) {
   const [hovered, setHovered] = useState<HoveredModelPoint | null>(null);
   const width = 820;
@@ -296,10 +302,12 @@ function ModelComparisonChart({
   const xIndexes = [...new Set(Array.from({ length: Math.min(dates.length, 5) }, (_, index) =>
     Math.round((index * Math.max(dates.length - 1, 0)) / Math.max(Math.min(dates.length, 5) - 1, 1)),
   ))];
-  const selectedSeries = series.find((item) => item.id === selectedId) ?? series[0];
-  const selectedLatest = selectedSeries ? latestModelPoint(selectedSeries) : null;
+  const selectedSeries = series.filter((item) => selectedIds.includes(item.id));
+  const primarySelectedSeries = selectedSeries[0] ?? series[0];
+  const selectedLatest = primarySelectedSeries ? latestModelPoint(primarySelectedSeries) : null;
   const selectedValue = selectedLatest?.[metric] ?? null;
-  const selectedLabel = selectedSeries ? shortModelLabel(selectedSeries.label) : "未选择模型";
+  const selectedLabel = primarySelectedSeries ? shortModelLabel(primarySelectedSeries.label) : "未选择模型";
+  const selectedSummary = selectedSeries.length > 1 ? `已选 ${selectedSeries.length} 个模型` : selectedLabel;
   const meta = metricMeta[metric];
   const pathFor = (item: ModelTrendSeries) => {
     const points = new Map(item.points.map((point) => [point.at, point[metric]]));
@@ -322,15 +330,15 @@ function ModelComparisonChart({
       <figcaption>
         <div>
           <span>{meta.label} 曲线</span>
-          <strong>{selectedValue === null ? "—" : formatValue(selectedValue, meta.unit)}</strong>
-          <small>{selectedLabel} · {selectedLatest ? formatChartDate(selectedLatest.at) : "等待公开数据"}</small>
+          <strong>{selectedSeries.length > 1 ? `${selectedSeries.length} 个模型` : selectedValue === null ? "—" : formatValue(selectedValue, meta.unit)}</strong>
+          <small>{selectedSeries.length > 1 ? "多模型同时对比" : `${selectedLabel} · ${selectedLatest ? formatChartDate(selectedLatest.at) : "等待公开数据"}`}</small>
         </div>
-        <p>点选卡片或曲线节点可聚焦模型</p>
+        <p>点选卡片或曲线节点可增减对比模型</p>
       </figcaption>
       <div className="model-curve-canvas" onPointerLeave={() => setHovered(null)}>
         <svg viewBox={`0 0 ${width} ${height}`} role="img" aria-label={`${meta.label} 多模型对比曲线`}>
           <title>{meta.label} 多模型对比</title>
-          <desc>展示 {series.length} 个公开模型配置的 {meta.label} 时间变化。当前选中 {selectedLabel}。</desc>
+          <desc>展示 {series.length} 个公开模型配置的 {meta.label} 时间变化。当前选中 {selectedSummary}。</desc>
           {yTicks.map((tick) => (
             <g key={tick}>
               <line className="model-curve-grid" x1={left} x2={width - right} y1={y(tick)} y2={y(tick)} />
@@ -356,7 +364,7 @@ function ModelComparisonChart({
             </text>
           ))}
           {series.map((item) => {
-            const selected = item.id === selectedSeries?.id;
+            const selected = selectedIds.includes(item.id);
             const color = modelColor(item.id);
             const renderColor = selected ? color : "#8c989f";
             const path = pathFor(item);
@@ -385,7 +393,7 @@ function ModelComparisonChart({
                       fill={renderColor}
                       r={selected ? 4.3 : 3.1}
                       key={`${item.id}-${point.at}`}
-                      onClick={() => onSelect(item.id)}
+                      onClick={() => onToggle(item.id)}
                       onPointerEnter={() => setHovered({
                         label: shortModelLabel(item.label),
                         at: point.at,
@@ -412,7 +420,7 @@ function ModelComparisonChart({
       <p className="model-curve-detail" aria-live="polite">
         {hovered
           ? `${hovered.label} · ${formatChartDate(hovered.at)} · ${formatValue(hovered.value, meta.unit)}`
-          : `已选 ${selectedLabel}，点击其他模型卡片可突出其曲线。`}
+          : `已选 ${selectedSeries.length} 个模型；点击卡片或节点可增减对比，至少保留一个模型。`}
       </p>
     </figure>
   );
@@ -422,7 +430,7 @@ export default function Dashboard() {
   const [data, setData] = useState<ResetBriefing | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
-  const [modelId, setModelId] = useState("gpt_56_sol_max");
+  const [selectedModelIds, setSelectedModelIds] = useState<string[]>(["gpt_56_sol_max"]);
   const [metric, setMetric] = useState<ModelMetric>("score");
 
   async function refresh() {
@@ -448,7 +456,22 @@ export default function Dashboard() {
   const probability = data?.probability48h;
   const tone = probabilityTone(probability);
   const quota = data?.quotaTrends.find((series) => series.id === "pro20-7d") ?? data?.quotaTrends[0];
-  const model = data?.modelTrends.find((series) => series.id === modelId) ?? data?.modelTrends[0];
+  const modelTrends = data?.modelTrends ?? [];
+  const knownSelectedModelIds = selectedModelIds.filter((id) => modelTrends.some((series) => series.id === id));
+  const activeSelectedModelIds = knownSelectedModelIds.length
+    ? knownSelectedModelIds
+    : modelTrends.slice(0, 1).map((series) => series.id);
+  const selectedModels = modelTrends.filter((series) => activeSelectedModelIds.includes(series.id));
+  const model = selectedModels[0] ?? modelTrends[0];
+  const latestResetTime = formatBeijing(data?.latestConfirmed?.occurredAt);
+  const toggleModel = (id: string) => {
+    setSelectedModelIds((current) => {
+      const visible = current.filter((candidate) => modelTrends.some((series) => series.id === candidate));
+      const next = visible.length ? visible : modelTrends.slice(0, 1).map((series) => series.id);
+      if (next.includes(id)) return next.length > 1 ? next.filter((candidate) => candidate !== id) : next;
+      return [...next, id];
+    });
+  };
   const quotaSummary = useMemo(() => {
     if (!quota) return null;
     const valid = quota.points.filter(
@@ -485,7 +508,10 @@ export default function Dashboard() {
         <section className="signal-panel" id="top" aria-label="重置信号摘要">
           <article className="latest-card">
             <p>最近一次重置</p>
-            <strong className="latest-reset-time">{formatBeijing(data?.latestConfirmed?.occurredAt)}</strong>
+            <strong className="latest-reset-time">
+              <span>{latestResetTime.date}</span>
+              {latestResetTime.time ? <span>{latestResetTime.time}</span> : null}
+            </strong>
             <span className="latest-timezone">北京时间</span>
             {data?.latestConfirmed ? (
               <a href={data.latestConfirmed.sourceUrl} target="_blank" rel="noreferrer">查看原始来源 ↗</a>
@@ -598,21 +624,21 @@ export default function Dashboard() {
             </div>
             <span>{formatSourceUpdatedAt(data?.modelUpdatedAt)} 更新</span>
           </div>
-          <p className="model-intro">每张卡片是一种公开测量配置；点击可突出对应曲线。价格为单任务平均价格。</p>
+          <p className="model-intro">每张卡片是一种公开测量配置；可同时选择多个模型进行对比。价格为单任务平均价格。</p>
           <div className="model-card-grid" aria-label="模型配置选择">
-            {data?.modelTrends.map((series) => (
+            {modelTrends.map((series) => (
               <ModelCard
                 key={series.id}
                 series={series}
-                selected={model?.id === series.id}
-                onSelect={() => setModelId(series.id)}
+                selected={activeSelectedModelIds.includes(series.id)}
+                onSelect={() => toggleModel(series.id)}
               />
             ))}
           </div>
           <div className="model-curve-toolbar">
             <p>
-              <span aria-hidden="true" style={{ background: model ? modelColor(model.id) : "#806ef2" }} />
-              当前突出：<strong>{model ? shortModelLabel(model.label) : "等待数据"}</strong>
+              <span aria-hidden="true" style={{ background: selectedModels.length === 1 && model ? modelColor(model.id) : "#5f6f7a" }} />
+              已选模型：<strong>{selectedModels.length ? `${selectedModels.length} 个` : "等待数据"}</strong>
             </p>
             <label className="model-metric-select">
               <span>切换曲线指标</span>
@@ -623,12 +649,12 @@ export default function Dashboard() {
               </select>
             </label>
           </div>
-          {data?.modelTrends.length ? (
+          {modelTrends.length ? (
             <ModelComparisonChart
-              series={data.modelTrends}
+              series={modelTrends}
               metric={metric}
-              selectedId={model?.id ?? modelId}
-              onSelect={setModelId}
+              selectedIds={activeSelectedModelIds}
+              onToggle={toggleModel}
             />
           ) : <div className="empty-state">等待模型曲线数据。</div>}
           <p className="chart-note">性价比 = IQ ÷ 单任务平均价格，仅用于同一公开任务集内的相对比较。</p>
