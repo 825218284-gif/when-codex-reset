@@ -54,18 +54,6 @@ function formatBeijing(value: string | null | undefined) {
   }).format(date).replace(/\//g, ".");
 }
 
-function formatCheckedAt(value?: string) {
-  if (!value) return "正在读取";
-  const date = new Date(value);
-  if (Number.isNaN(date.getTime())) return "刚刚整理";
-  return new Intl.DateTimeFormat("zh-CN", {
-    hour: "2-digit",
-    minute: "2-digit",
-    hour12: false,
-    timeZone: "Asia/Shanghai",
-  }).format(date);
-}
-
 function formatSourceUpdatedAt(value?: string | null) {
   if (!value) return "正在读取";
   const date = new Date(value);
@@ -96,6 +84,17 @@ function formatChartDate(value: string) {
     hour12: false,
     timeZone: "Asia/Shanghai",
   }).format(date);
+}
+
+function formatResetTimelineDate(value: string) {
+  const match = value.match(/(?:\d{4}[./-])?(\d{1,2})[./-](\d{1,2})(?:\s+(\d{1,2}:\d{2}))?/);
+  if (match) {
+    return {
+      day: `${Number(match[1])}/${Number(match[2])}`,
+      minute: match[3] ?? "",
+    };
+  }
+  return { day: value, minute: "" };
 }
 
 function formatValue(value: number, unit: string) {
@@ -512,24 +511,31 @@ export default function Dashboard() {
               <p className="eyebrow">CONFIRMED HISTORY</p>
               <h2 id="timeline-title">额度重置时间轴</h2>
             </div>
-            <span>北京时间 {formatCheckedAt(data?.generatedAt)} 更新</span>
+            <a
+              className="timeline-latest-link"
+              href={data?.history[0]?.sourceUrl ?? CODEX_RESETS_URL}
+              target="_blank"
+              rel="noreferrer"
+            >
+              最新记录 ↗
+            </a>
           </div>
 
           {loading && !data ? <div className="timeline-loading"><i /><i /><i /></div> : null}
           {!loading && !data?.history.length ? <div className="empty-state">暂未读取到可展示的额度重置历史。</div> : null}
           <ol className="timeline">
-            {data?.history.map((event, index) => (
-              <li key={event.id}>
-                <div className="timeline-node" aria-hidden="true"><span /></div>
-                <time>{event.date}</time>
-                <div className="timeline-event">
-                  <span>RESET · 已记录</span>
-                  <h3>{event.title}</h3>
-                  <a href={event.sourceUrl} target="_blank" rel="noreferrer">原始公告 ↗</a>
-                </div>
-                <b>{String(index + 1).padStart(2, "0")}</b>
-              </li>
-            ))}
+            {data?.history.slice(0, 4).map((event, index) => {
+              const resetTime = formatResetTimelineDate(event.date);
+              return (
+                <li className={index === 0 ? "is-latest" : ""} key={event.id}>
+                  <div className="timeline-node" aria-hidden="true"><span /></div>
+                  <time aria-label={`额度重置：${event.date}`}>
+                    <strong>{resetTime.day}</strong>
+                    {index === 0 && resetTime.minute ? <small>{resetTime.minute}</small> : null}
+                  </time>
+                </li>
+              );
+            })}
           </ol>
           <SourceCaption href={CODEX_RESETS_URL} label="Codex Resets" />
         </section>
