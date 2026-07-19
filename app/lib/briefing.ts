@@ -36,6 +36,7 @@ export interface ModelTrendPoint {
   score: number | null;
   cost: number | null;
   value: number | null;
+  duration: string | null;
 }
 
 export interface ModelTrendSeries {
@@ -60,5 +61,6 @@ export interface ResetBriefing {
   quotaUpdatedAt: string | null;
   quotaSnapshot: QuotaSnapshotRow[];
   quotaTrends: QuotaTrendSeries[];
+  modelUpdatedAt: string | null;
   modelTrends: ModelTrendSeries[];
 }

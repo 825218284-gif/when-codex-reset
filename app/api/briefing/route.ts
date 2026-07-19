@@ -165,6 +165,7 @@ function modelPoint(raw: UnknownRecord): ModelTrendPoint | null {
     score,
     cost,
     value: score !== null && cost !== null && cost > 0 ? score / cost : null,
+    duration: asString(raw.average_task_time_human) || null,
   };
 }
 
@@ -203,7 +204,24 @@ function collectModelTrends(radar: UnknownRecord): ModelTrendSeries[] {
     if (series) items.push(series);
   }
 
-  return items.sort((a, b) => a.label.localeCompare(b.label));
+  const order = [
+    "gpt_56_sol_max",
+    "gpt_56_sol_xhigh",
+    "gpt_56_sol_high",
+    "gpt_56_sol_medium",
+    "gpt_56_sol_low",
+    "gpt_56_terra_max",
+    "gpt_56_terra_high",
+    "gpt_56_luna_max",
+    "gpt_56_luna_high",
+    "gpt_55_high_distributed",
+  ];
+  return items.sort((a, b) => {
+    const aRank = order.indexOf(a.id);
+    const bRank = order.indexOf(b.id);
+    return (aRank < 0 ? Number.MAX_SAFE_INTEGER : aRank) - (bRank < 0 ? Number.MAX_SAFE_INTEGER : bRank)
+      || a.label.localeCompare(b.label);
+  });
 }
 
 function collectQuotaTrends(radar: UnknownRecord): QuotaTrendSeries[] {
@@ -293,6 +311,9 @@ export async function GET() {
       : null,
     quotaSnapshot: codexRadar ? collectQuotaSnapshot(codexRadar) : [],
     quotaTrends: codexRadar ? collectQuotaTrends(codexRadar) : [],
+    modelUpdatedAt: codexRadar
+      ? asString(asRecord(asRecord(codexRadar.model_iq).latest).date) || null
+      : null,
     modelTrends: codexRadar ? collectModelTrends(codexRadar) : [],
   };
 
