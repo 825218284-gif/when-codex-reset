@@ -25,6 +25,12 @@ export interface QuotaTrendSeries {
   points: TrendPoint[];
 }
 
+export interface QuotaSnapshotRow {
+  tier: string;
+  sevenDayQuota: number | null;
+  basis: string;
+}
+
 export interface ModelTrendPoint {
   at: string;
   score: number | null;
@@ -51,6 +57,8 @@ export interface ResetBriefing {
     sourceUrl: string;
   } | null;
   history: HardResetEvent[];
+  quotaUpdatedAt: string | null;
+  quotaSnapshot: QuotaSnapshotRow[];
   quotaTrends: QuotaTrendSeries[];
   modelTrends: ModelTrendSeries[];
 }

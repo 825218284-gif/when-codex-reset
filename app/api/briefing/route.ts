@@ -2,6 +2,7 @@ import type {
   HardResetEvent,
   ModelTrendPoint,
   ModelTrendSeries,
+  QuotaSnapshotRow,
   QuotaTrendSeries,
   ResetBriefing,
   TrendPoint,
@@ -225,6 +226,27 @@ function collectQuotaTrends(radar: UnknownRecord): QuotaTrendSeries[] {
     .filter((series) => series.points.some((point) => point.value !== null));
 }
 
+function quotaBasisLabel(value: unknown) {
+  const basis = asString(value);
+  if (/distributed radar/i.test(basis)) return "分布式雷达";
+  if (/estimated/i.test(basis)) return "推算";
+  return basis || "公开观测";
+}
+
+function collectQuotaSnapshot(radar: UnknownRecord): QuotaSnapshotRow[] {
+  const quotaRadar = asRecord(asRecord(radar.model_iq).quota_radar);
+  const rows = Array.isArray(quotaRadar.rows) ? quotaRadar.rows : [];
+
+  return rows.map((raw) => {
+    const row = asRecord(raw);
+    return {
+      tier: asString(row.tier, "—"),
+      sevenDayQuota: asNumber(row.seven_d),
+      basis: quotaBasisLabel(row.basis),
+    };
+  });
+}
+
 export async function GET() {
   const [resetResult, codexResult] = await Promise.allSettled([
     fetch(RESET_RADAR_SITE, {
@@ -266,6 +288,10 @@ export async function GET() {
         : "Codex 雷达公开摘要",
     latestConfirmed: resetRadar?.latestConfirmed ?? null,
     history: resetRadar?.history ?? [],
+    quotaUpdatedAt: codexRadar
+      ? asString(asRecord(asRecord(codexRadar.model_iq).quota_radar).updated_at) || null
+      : null,
+    quotaSnapshot: codexRadar ? collectQuotaSnapshot(codexRadar) : [],
     quotaTrends: codexRadar ? collectQuotaTrends(codexRadar) : [],
     modelTrends: codexRadar ? collectModelTrends(codexRadar) : [],
   };

@@ -11,6 +11,9 @@ const metricMeta: Record<ModelMetric, { label: string; unit: string; color: stri
   value: { label: "性价比", unit: "IQ / USD", color: "#49c5a1" },
 };
 
+const RESET_RADAR_URL = "https://codexresetradar.com/";
+const CODEX_RADAR_URL = "https://codexradar.com/";
+
 function formatBeijing(value: string | null | undefined) {
   if (!value) return "时间待来源补全";
   const date = new Date(value);
@@ -38,6 +41,20 @@ function formatCheckedAt(value?: string) {
   }).format(date);
 }
 
+function formatSourceUpdatedAt(value?: string | null) {
+  if (!value) return "正在读取";
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return "刚刚整理";
+  return new Intl.DateTimeFormat("zh-CN", {
+    month: "long",
+    day: "numeric",
+    hour: "2-digit",
+    minute: "2-digit",
+    hour12: false,
+    timeZone: "Asia/Shanghai",
+  }).format(date);
+}
+
 function formatChartDate(value: string) {
   const quotaMatch = value.match(/^\d{4}-(\d{2})-(\d{2})(?:-(am|pm))?$/i);
   if (quotaMatch) {
@@ -57,8 +74,20 @@ function formatChartDate(value: string) {
 }
 
 function formatValue(value: number, unit: string) {
-  if (unit.startsWith("USD")) return `$${value.toFixed(2)}`;
+  if (unit.startsWith("USD")) {
+    return new Intl.NumberFormat("en-US", {
+      style: "currency",
+      currency: "USD",
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2,
+    }).format(value);
+  }
   return value.toFixed(1);
+}
+
+function formatSignedValue(value: number, unit: string) {
+  const sign = value > 0 ? "+" : value < 0 ? "−" : "";
+  return `${sign}${formatValue(Math.abs(value), unit)}`;
 }
 
 function probabilityTone(value: number | null | undefined) {
@@ -66,6 +95,14 @@ function probabilityTone(value: number | null | undefined) {
   if (value >= 60) return "high";
   if (value >= 30) return "watch";
   return "calm";
+}
+
+function SourceCaption({ href, label }: { href: string; label: string }) {
+  return (
+    <p className="source-caption">
+      数据来源：<a href={href} target="_blank" rel="noreferrer">{label} ↗</a>
+    </p>
+  );
 }
 
 function CurveChart({
@@ -156,7 +193,6 @@ export default function Dashboard() {
   const [data, setData] = useState<ResetBriefing | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
-  const [quotaId, setQuotaId] = useState("pro20-7d");
   const [modelId, setModelId] = useState("gpt_56_sol_max");
   const [metric, setMetric] = useState<ModelMetric>("score");
 
@@ -176,13 +212,30 @@ export default function Dashboard() {
   }
 
   useEffect(() => {
-    void refresh();
+    const initialLoad = window.setTimeout(() => void refresh(), 0);
+    return () => window.clearTimeout(initialLoad);
   }, []);
 
   const probability = data?.probability48h;
   const tone = probabilityTone(probability);
-  const quota = data?.quotaTrends.find((series) => series.id === quotaId) ?? data?.quotaTrends[0];
+  const quota = data?.quotaTrends.find((series) => series.id === "pro20-7d") ?? data?.quotaTrends[0];
   const model = data?.modelTrends.find((series) => series.id === modelId) ?? data?.modelTrends[0];
+  const quotaSummary = useMemo(() => {
+    if (!quota) return null;
+    const valid = quota.points.filter(
+      (point): point is TrendPoint & { value: number } => point.value !== null,
+    );
+    const previous = valid.at(-2) ?? valid[0];
+    const latest = valid.at(-1);
+    if (!previous || !latest) return null;
+    const delta = latest.value - previous.value;
+    return {
+      previous: previous.value,
+      latest: latest.value,
+      delta,
+      percent: previous.value === 0 ? null : (delta / previous.value) * 100,
+    };
+  }, [quota]);
   const modelPoints = useMemo<TrendPoint[]>(() => {
     if (!model) return [];
     return model.points.map((point) => ({ at: point.at, value: point[metric] }));
@@ -224,6 +277,7 @@ export default function Dashboard() {
             ) : null}
           </article>
         </section>
+        <SourceCaption href={RESET_RADAR_URL} label="Codex Reset Radar" />
 
         {error ? <p className="error-message">{error}</p> : null}
 
@@ -252,30 +306,57 @@ export default function Dashboard() {
               </li>
             ))}
           </ol>
+          <SourceCaption href={RESET_RADAR_URL} label="Codex Reset Radar" />
         </section>
 
         <section className="chart-section" aria-labelledby="quota-title">
           <div className="section-heading chart-heading">
             <div>
               <p className="eyebrow">PUBLIC QUOTA TREND</p>
-              <h2 id="quota-title">额度变化曲线</h2>
+              <h2 id="quota-title">额度雷达</h2>
             </div>
-            <span>公开观测，不代表个人余额</span>
+            <span>{formatSourceUpdatedAt(data?.quotaUpdatedAt)} 更新</span>
           </div>
-          <div className="chart-controls" aria-label="额度档位选择">
-            {data?.quotaTrends.map((series) => (
-              <button
-                className={quota?.id === series.id ? "chart-chip is-active" : "chart-chip"}
-                key={series.id}
-                onClick={() => setQuotaId(series.id)}
-                aria-pressed={quota?.id === series.id}
-              >
-                {series.label}
-              </button>
-            ))}
+          <div className="quota-card">
+            <div className="quota-card-heading">
+              <div>
+                <h3>公开 7d 额度</h3>
+                <p>当前公开观测快照</p>
+              </div>
+              <span>不代表个人剩余额度</span>
+            </div>
+            <div className="quota-table-wrap">
+              <table className="quota-table">
+                <thead>
+                  <tr>
+                    <th scope="col">档位</th>
+                    <th scope="col">7d 额度</th>
+                    <th scope="col">来源</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {data?.quotaSnapshot.map((row) => (
+                    <tr key={row.tier}>
+                      <th scope="row">{row.tier}</th>
+                      <td>{row.sevenDayQuota === null ? "—" : formatValue(row.sevenDayQuota, "USD / 7d")}</td>
+                      <td><a href={CODEX_RADAR_URL} target="_blank" rel="noreferrer">{row.basis} ↗</a></td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </div>
+          <div className="quota-curve-heading">
+            <h3>20x Pro · 7d 额度变化</h3>
+            {quotaSummary ? (
+              <span className={quotaSummary.delta >= 0 ? "is-up" : "is-down"}>
+                {formatValue(quotaSummary.previous, "USD / 7d")} → {formatValue(quotaSummary.latest, "USD / 7d")} ({formatSignedValue(quotaSummary.delta, "USD / 7d")}{quotaSummary.percent === null ? "" : `，${quotaSummary.percent > 0 ? "+" : ""}${quotaSummary.percent.toFixed(1)}%`})
+              </span>
+            ) : null}
           </div>
           {quota ? <CurveChart title={`${quota.label} 额度变化`} points={quota.points} unit={quota.unit} color="#49c5a1" /> : <div className="empty-state">等待额度趋势数据。</div>}
-          <p className="chart-note">为避免不同档位与窗口混在一个刻度上，曲线按档位单独缩放。20x Pro 使用 7d 字段；5x Pro 与 Plus 使用来源公开的 5h 历史字段。</p>
+          <p className="chart-note">仅展示一条可持续读取的 20x Pro 7d 公开曲线。</p>
+          <SourceCaption href={CODEX_RADAR_URL} label="Codex 雷达 codexradar.com" />
         </section>
 
         <section className="chart-section model-section" aria-labelledby="model-title">
@@ -308,6 +389,7 @@ export default function Dashboard() {
           </div>
           {model ? <CurveChart title={`${model.label} ${metricMeta[metric].label}`} points={modelPoints} unit={metricMeta[metric].unit} color={metricMeta[metric].color} /> : <div className="empty-state">等待模型曲线数据。</div>}
           <p className="chart-note">每个选项对应一个公开测量配置。价格为单任务平均价格；性价比仅用于同一任务集内的相对比较。</p>
+          <SourceCaption href={CODEX_RADAR_URL} label="Codex 雷达 codexradar.com" />
         </section>
 
         <footer>
@@ -319,7 +401,6 @@ export default function Dashboard() {
               </a>
             ))}
           </div>
-          <small>数据来自 Codex 雷达 codexradar.com</small>
         </footer>
       </div>
     </main>

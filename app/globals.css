@@ -57,6 +57,9 @@ main { position: relative; min-height: 100vh; overflow: hidden; }
 .latest-card a { display: inline-block; margin-top: 13px; color: var(--mint-deep); font-size: 11px; font-weight: 650; text-decoration: none; }
 .latest-card a:hover { text-decoration: underline; }
 .error-message { margin: 18px 0 0; padding: 11px 13px; border: 1px solid #efd29d; border-radius: 9px; color: #8a5a17; background: #fff8e9; font-size: 12px; }
+.source-caption { margin: 12px 0 0; color: #82909b; font-size: 10px; line-height: 1.55; }
+.source-caption a { color: #627582; text-decoration: none; }
+.source-caption a:hover { color: var(--mint-deep); text-decoration: underline; }
 
 .timeline-section { padding: 92px 0 90px; }
 .section-heading { display: flex; align-items: end; justify-content: space-between; gap: 25px; padding-bottom: 22px; border-bottom: 1px solid var(--line); }
@@ -80,6 +83,25 @@ main { position: relative; min-height: 100vh; overflow: hidden; }
 
 .chart-section { padding: 0 0 84px; }
 .chart-heading { padding-top: 8px; }
+.quota-card { margin-top: 21px; overflow: hidden; border: 1px solid #d8e1dc; border-radius: 14px; background: rgba(255,255,255,.68); }
+.quota-card-heading { display: flex; align-items: end; justify-content: space-between; gap: 18px; padding: 17px 20px 15px; border-bottom: 1px solid #e0e7e2; }
+.quota-card-heading h3, .quota-curve-heading h3 { margin: 0; color: var(--ink); font-size: 15px; letter-spacing: -.035em; }
+.quota-card-heading p { margin: 5px 0 0; color: #7b8995; font-size: 10px; }
+.quota-card-heading > span { color: #84919b; font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 10px; text-align: right; }
+.quota-table-wrap { overflow-x: auto; }
+.quota-table { width: 100%; min-width: 480px; border-collapse: collapse; }
+.quota-table th, .quota-table td { padding: 14px 20px; border-bottom: 1px solid #e4e9e6; text-align: left; white-space: nowrap; }
+.quota-table thead th { color: #748390; font-size: 10px; font-weight: 650; }
+.quota-table tbody th { color: var(--ink); font-size: 14px; font-weight: 650; }
+.quota-table tbody td { color: #2d4d58; font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 13px; font-weight: 700; }
+.quota-table tbody td:last-child { color: #72818e; font-family: inherit; font-size: 11px; font-weight: 500; }
+.quota-table tbody tr:last-child th, .quota-table tbody tr:last-child td { border-bottom: 0; }
+.quota-table a { color: inherit; text-decoration: none; }
+.quota-table a:hover { color: var(--mint-deep); text-decoration: underline; }
+.quota-curve-heading { display: flex; align-items: baseline; justify-content: space-between; gap: 18px; margin: 29px 0 0; }
+.quota-curve-heading > span { color: #62717e; font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 10px; font-weight: 700; text-align: right; }
+.quota-curve-heading > span.is-up { color: #b0394a; }
+.quota-curve-heading > span.is-down { color: #596d79; }
 .chart-controls { display: flex; flex-wrap: wrap; gap: 7px; margin: 21px 0 12px; }
 .chart-chip { min-height: 31px; padding: 0 11px; border: 1px solid transparent; border-radius: 8px; color: #71808e; background: transparent; font-size: 11px; transition: background 160ms ease, border-color 160ms ease, color 160ms ease; }
 .chart-chip:hover { color: var(--ink); background: rgba(255,255,255,.62); }
@@ -132,6 +154,11 @@ footer small { color: #83909c; font-family: ui-monospace, SFMono-Regular, Menlo,
   .timeline::before { left: 13px; }
   .timeline-event h3 { font-size: 16px; }
   .chart-section { padding-bottom: 65px; }
+  .quota-card-heading { display: block; }
+  .quota-card-heading > span { display: block; margin-top: 9px; text-align: left; }
+  .quota-table th, .quota-table td { padding: 13px 16px; }
+  .quota-curve-heading { align-items: start; flex-direction: column; gap: 7px; }
+  .quota-curve-heading > span { text-align: left; }
   .curve-figure figcaption { padding-left: 47px; }
   .curve-y-label, .curve-x-label, .curve-end-label { font-size: 11px; }
   .model-controls { align-items: stretch; flex-direction: column; }
