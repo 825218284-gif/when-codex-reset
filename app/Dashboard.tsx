@@ -518,7 +518,7 @@ export default function Dashboard() {
             ) : null}
           </article>
           <article className={`probability-card ${tone}`}>
-            <p>未来 48 小时</p>
+            <p>未来 48 小时重置可能性</p>
             <strong>{probability === null || probability === undefined ? "—" : `${probability}%`}</strong>
             <span>
               <a href={RESET_RADAR_URL} target="_blank" rel="noreferrer">
