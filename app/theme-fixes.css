@@ -1,0 +1,42 @@
+/* Readability and responsive corrections for the midnight-fantasy trial. */
+.quota-card-heading h3 { color: #10152f; }
+.quota-card-heading p,
+.quota-card-heading > span { color: #273a66; }
+
+.chart-section { min-width: 0; overflow: hidden; }
+.quota-curve-heading { min-width: 0; align-items: flex-start; }
+.quota-curve-heading h3 { min-width: 0; overflow-wrap: anywhere; }
+.quota-curve-heading > span {
+  flex: 0 1 auto;
+  max-width: 100%;
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  color: var(--ink);
+  background: transparent;
+  box-shadow: none;
+  font-family: inherit;
+  font-size: 17px;
+  font-weight: 950;
+  letter-spacing: -.045em;
+  line-height: 1.15;
+  overflow-wrap: anywhere;
+  text-align: right;
+}
+.quota-curve-heading > span.is-up,
+.quota-curve-heading > span.is-down { background: transparent; }
+
+.curve-figure { width: 100%; max-width: 100%; min-width: 0; overflow: hidden; }
+.curve-figure figcaption { min-width: 0; flex-wrap: wrap; padding: 0 12px 8px 36px; }
+.curve-figure figcaption strong { min-width: 0; overflow-wrap: anywhere; }
+.curve-figure svg { max-width: 100%; min-width: 0; }
+
+/* chart-section previously supplied a 20px background tile to model-section. */
+.model-section { background-size: 100% 100%; background-repeat: no-repeat; }
+
+@media (max-width: 720px) {
+  .quota-curve-heading { display: grid; grid-template-columns: minmax(0, 1fr); gap: 8px; }
+  .quota-curve-heading > span { text-align: left; }
+  .curve-figure figcaption { padding-left: 32px; }
+  .curve-figure figcaption strong { font-size: 17px; }
+}
