@@ -312,11 +312,15 @@ function ModelComparisonChart({
     Math.round((index * Math.max(dates.length - 1, 0)) / Math.max(Math.min(dates.length, 5) - 1, 1)),
   ))];
   const selectedSeries = series.filter((item) => selectedIds.includes(item.id));
-  const primarySelectedSeries = selectedSeries[0] ?? series[0];
+  const primarySelectedSeries = selectedSeries[0];
   const selectedLatest = primarySelectedSeries ? latestModelPoint(primarySelectedSeries) : null;
   const selectedValue = selectedLatest?.[metric] ?? null;
   const selectedLabel = primarySelectedSeries ? shortModelLabel(primarySelectedSeries.label) : "未选择模型";
-  const selectedSummary = selectedSeries.length > 1 ? `已选 ${selectedSeries.length} 个模型` : selectedLabel;
+  const selectedSummary = selectedSeries.length > 1
+    ? `已选 ${selectedSeries.length} 个模型`
+    : selectedSeries.length === 1
+      ? selectedLabel
+      : "未选择任何模型";
   const meta = metricMeta[metric];
   const pathFor = (item: ModelTrendSeries) => {
     const points = new Map(item.points.map((point) => [point.at, point[metric]]));
@@ -340,7 +344,13 @@ function ModelComparisonChart({
         <div>
           <span>{meta.label} 曲线</span>
           <strong>{selectedSeries.length > 1 ? `${selectedSeries.length} 个模型` : selectedValue === null ? "—" : formatValue(selectedValue, meta.unit)}</strong>
-          <small>{selectedSeries.length > 1 ? "多模型同时对比" : `${selectedLabel} · ${selectedLatest ? formatChartDate(selectedLatest.at) : "等待公开数据"}`}</small>
+          <small>
+            {selectedSeries.length > 1
+              ? "多模型同时对比"
+              : selectedSeries.length === 1
+                ? `${selectedLabel} · ${selectedLatest ? formatChartDate(selectedLatest.at) : "等待公开数据"}`
+                : "点击卡片开始对比"}
+          </small>
         </div>
         <p>点选卡片或曲线节点可增减对比模型</p>
       </figcaption>
@@ -379,7 +389,14 @@ function ModelComparisonChart({
             const path = pathFor(item);
             const dash = modelDash(item.id);
             return (
-              <g className={selected ? "model-curve-series is-selected" : "model-curve-series"} key={item.id}>
+              <g
+                className={selected
+                  ? "model-curve-series is-selected"
+                  : selectedIds.length
+                    ? "model-curve-series"
+                    : "model-curve-series is-idle"}
+                key={item.id}
+              >
                 {path ? (
                   <path
                     className="model-curve-line"
@@ -429,7 +446,9 @@ function ModelComparisonChart({
       <p className="model-curve-detail" aria-live="polite">
         {hovered
           ? `${hovered.label} · ${formatChartDate(hovered.at)} · ${formatValue(hovered.value, meta.unit)}`
-          : `已选 ${selectedSeries.length} 个模型；点击卡片或节点可增减对比，至少保留一个模型。`}
+          : selectedSeries.length
+            ? `已选 ${selectedSeries.length} 个模型；点击卡片或节点可增减对比。`
+            : "暂未选择模型；点击任意卡片或曲线节点开始对比。"}
       </p>
     </figure>
   );
@@ -467,18 +486,15 @@ export default function Dashboard() {
   const quota = data?.quotaTrends.find((series) => series.id === "pro20-7d") ?? data?.quotaTrends[0];
   const modelTrends = data?.modelTrends ?? [];
   const knownSelectedModelIds = selectedModelIds.filter((id) => modelTrends.some((series) => series.id === id));
-  const activeSelectedModelIds = knownSelectedModelIds.length
-    ? knownSelectedModelIds
-    : modelTrends.slice(0, 1).map((series) => series.id);
+  const activeSelectedModelIds = knownSelectedModelIds;
   const selectedModels = modelTrends.filter((series) => activeSelectedModelIds.includes(series.id));
-  const model = selectedModels[0] ?? modelTrends[0];
+  const model = selectedModels[0] ?? null;
   const latestResetTime = formatBeijing(data?.latestConfirmed?.occurredAt);
   const toggleModel = (id: string) => {
     setSelectedModelIds((current) => {
       const visible = current.filter((candidate) => modelTrends.some((series) => series.id === candidate));
-      const next = visible.length ? visible : modelTrends.slice(0, 1).map((series) => series.id);
-      if (next.includes(id)) return next.length > 1 ? next.filter((candidate) => candidate !== id) : next;
-      return [...next, id];
+      if (visible.includes(id)) return visible.filter((candidate) => candidate !== id);
+      return [...visible, id];
     });
   };
   const quotaSummary = useMemo(() => {
@@ -647,7 +663,7 @@ export default function Dashboard() {
           <div className="model-curve-toolbar">
             <p>
               <span aria-hidden="true" style={{ background: selectedModels.length === 1 && model ? modelColor(model.id) : "#5f6f7a" }} />
-              已选模型：<strong>{selectedModels.length ? `${selectedModels.length} 个` : "等待数据"}</strong>
+              已选模型：<strong>{selectedModels.length ? `${selectedModels.length} 个` : "未选择"}</strong>
             </p>
             <label className="model-metric-select">
               <span>切换曲线指标</span>
