@@ -145,7 +145,7 @@ footer small { color: var(--muted); }
 .model-card { border-color: #5979dc; color: var(--ink); background: rgba(12, 21, 57, .96); box-shadow: 4px 5px 0 var(--shadow), 0 0 13px rgba(80, 106, 226, .13); }
 .model-card::before { border-bottom-color: #182757; }
 .model-card:not(.is-selected) { border-color: #4e5f8f; opacity: .58; }
-.model-card:not(.is-selected)::before { background: #5f6b87; }
+.model-card:not(.is-selected)::before { border-bottom-color: transparent; background: inherit; }
 .model-card:not(.is-selected) .model-card-body > strong { color: #a1afd2; }
 .model-card.is-selected { color: var(--model-contrast); background: var(--model-color); box-shadow: 6px 7px 0 var(--shadow), 0 0 18px color-mix(in srgb, var(--model-color) 42%, transparent); }
 .model-metric-select select { border-color: #f1d76f; box-shadow: 2px 3px 0 var(--shadow), 0 0 12px rgba(255, 215, 104, .25); }
@@ -311,7 +311,7 @@ main::before {
 .model-card::before { position: absolute; top: 0; right: 0; left: 0; height: 8px; border-bottom: 2px solid var(--line); background: var(--model-color); content: ""; }
 .model-card:hover { transform: translate(2px, 2px); box-shadow: 2px 3px 0 var(--shadow); }
 .model-card:not(.is-selected) { border-color: #5d574f; opacity: .56; }
-.model-card:not(.is-selected)::before { background: #aaa297; }
+.model-card:not(.is-selected)::before { border-bottom-color: transparent; background: inherit; }
 .model-card:not(.is-selected) .model-card-body > strong { color: #615a51; }
 .model-card:not(.is-selected):hover { opacity: .8; }
 .model-card.is-selected { color: var(--model-contrast); background: var(--model-color); transform: translate(-1px, -2px) rotate(-.35deg); box-shadow: 6px 7px 0 var(--shadow); }
@@ -517,7 +517,7 @@ footer small { color: var(--muted); }
 .model-card { border-color: #5979dc; color: var(--ink); background: rgba(12, 21, 57, .96); box-shadow: 4px 5px 0 var(--shadow), 0 0 13px rgba(80, 106, 226, .13); }
 .model-card::before { border-bottom-color: #182757; }
 .model-card:not(.is-selected) { border-color: #4e5f8f; opacity: .58; }
-.model-card:not(.is-selected)::before { background: #5f6b87; }
+.model-card:not(.is-selected)::before { border-bottom-color: transparent; background: inherit; }
 .model-card:not(.is-selected) .model-card-body > strong { color: #a1afd2; }
 .model-card.is-selected { color: var(--model-contrast); background: var(--model-color); box-shadow: 6px 7px 0 var(--shadow), 0 0 18px color-mix(in srgb, var(--model-color) 42%, transparent); }
 .model-metric-select select { border-color: #f1d76f; box-shadow: 2px 3px 0 var(--shadow), 0 0 12px rgba(255, 215, 104, .25); }
