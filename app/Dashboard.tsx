@@ -37,6 +37,12 @@ function modelColor(id: string) {
   return "#806ef2";
 }
 
+function modelContrastColor(id: string) {
+  if (id.includes("_sol_medium") || id.includes("_sol_low")) return "#ffffff";
+  if (id.includes("_terra_high") || id.includes("_luna_high")) return "#ffffff";
+  return "#10152f";
+}
+
 function modelDash(id: string) {
   if (id.endsWith("_max")) return undefined;
   if (id.includes("xhigh")) return "11 5";
@@ -254,7 +260,10 @@ function ModelCard({
       type="button"
       onClick={onSelect}
       aria-pressed={selected}
-      style={{ "--model-color": color } as CSSProperties}
+      style={{
+        "--model-color": color,
+        "--model-contrast": modelContrastColor(series.id),
+      } as CSSProperties}
     >
       <span className="model-card-label">{label}</span>
       <span className="model-card-body">
