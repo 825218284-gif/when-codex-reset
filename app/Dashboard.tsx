@@ -15,6 +15,15 @@ const CODEX_RESETS_URL = "https://codex-resets.com/";
 const RESET_RADAR_URL = "https://codexresetradar.com/";
 const CODEX_RADAR_URL = "https://codexradar.com/";
 
+function briefingUrl() {
+  const staticUrl = typeof document === "undefined"
+    ? ""
+    : document.getElementById("root")?.dataset.briefingUrl ?? "";
+  const baseUrl = staticUrl || "/api/briefing";
+  const separator = baseUrl.includes("?") ? "&" : "?";
+  return `${baseUrl}${separator}refresh=${Date.now()}`;
+}
+
 function modelColor(id: string) {
   if (id.includes("_sol_max") || id.includes("_sol_xhigh")) return "#f5c518";
   if (id.includes("_sol_high")) return "#e98500";
@@ -437,7 +446,7 @@ export default function Dashboard() {
     setLoading(true);
     setError("");
     try {
-      const response = await fetch("/api/briefing", { cache: "no-store" });
+      const response = await fetch(briefingUrl(), { cache: "no-store" });
       const next = (await response.json()) as ResetBriefing;
       if (!response.ok) throw new Error("source unavailable");
       setData(next);

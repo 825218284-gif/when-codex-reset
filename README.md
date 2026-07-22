@@ -1,98 +1,44 @@
-# vinext-starter
+# Codex 额度重置雷达
 
-A clean full-stack starter running on
-[vinext](https://github.com/cloudflare/vinext), with optional Cloudflare D1 and
-Drizzle support.
+面向 ChatGPT Plus 用户的公开信息仪表盘，集中展示：
 
-## Prerequisites
+- 最近四次已确认额度重置时间；
+- 未来 48 小时重置可能性；
+- 公开额度表格和 7 天变化曲线；
+- 各模型的 IQ、价格与性价比趋势。
 
-- Node.js `>=22.13.0`
+## 数据来源
 
-## Quick Start
+- 重置时间：[Codex Resets](https://codex-resets.com/)
+- 48 小时概率：[Codex Reset Radar](https://codexresetradar.com/)
+- 额度和模型趋势：[Codex Radar](https://codexradar.com/)
+
+这些数据是公开观察与汇总，不代表个人账户的实际余额，也不保证未来一定发生重置。
+
+## GitHub Pages
+
+`.github/workflows/pages.yml` 会在以下情况重新抓取数据并发布：
+
+- `main` 分支收到更新；
+- 每小时第 17 分钟；
+- 在 GitHub Actions 页面手动运行。
+
+GitHub Pages 读取 `public/data/briefing.json` 静态快照，因此刷新按钮会读取最近一次自动发布的数据。
+
+## 本地使用
+
+要求 Node.js 22.13 或更新版本。
 
 ```bash
 npm install
+npm run data:refresh
+npm run build:pages
+npm run preview:pages
+```
+
+原有服务端版本仍可使用：
+
+```bash
 npm run dev
 npm run build
 ```
-
-This starter does not use `wrangler.jsonc`.
-
-## Included Shape
-
-- edit site code under `app/`
-- `.openai/hosting.json` declares optional Sites D1 and R2 bindings
-- `vite.config.ts` simulates declared bindings for local development
-- `db/schema.ts` starts intentionally empty
-- `examples/d1/` contains an optional D1 example surface
-- `drizzle.config.ts` supports local migration generation when needed
-
-## Workspace Auth Headers
-
-OpenAI workspace sites can read the current user's email from
-`oai-authenticated-user-email`.
-
-SIWC-authenticated workspace sites may also receive
-`oai-authenticated-user-full-name` when the user's SIWC profile has a non-empty
-`name` claim. The full-name value is percent-encoded UTF-8 and is accompanied by
-`oai-authenticated-user-full-name-encoding: percent-encoded-utf-8`.
-
-Treat the full name as optional and fall back to email when it is absent:
-
-```tsx
-import { headers } from "next/headers";
-
-export default async function Home() {
-  const requestHeaders = await headers();
-  const email = requestHeaders.get("oai-authenticated-user-email");
-  const encodedFullName = requestHeaders.get("oai-authenticated-user-full-name");
-  const fullName =
-    encodedFullName &&
-    requestHeaders.get("oai-authenticated-user-full-name-encoding") ===
-      "percent-encoded-utf-8"
-      ? decodeURIComponent(encodedFullName)
-      : null;
-
-  const displayName = fullName ?? email;
-  // ...
-}
-```
-
-## Optional Dispatch-Owned ChatGPT Sign-In
-
-Import the ready-to-use helpers from `app/chatgpt-auth.ts` when the site needs
-optional or required ChatGPT sign-in:
-
-- Use `getChatGPTUser()` for optional signed-in UI.
-- Use `requireChatGPTUser(returnTo)` for server-rendered pages that should send
-  anonymous visitors through Sign in with ChatGPT.
-- Use `chatGPTSignInPath(returnTo)` and `chatGPTSignOutPath(returnTo)` for
-  browser links or actions.
-- Pass a same-origin relative `returnTo` path for the destination after sign-in
-  or sign-out. The helper validates and safely encodes it.
-- Mark protected pages with `export const dynamic = "force-dynamic"` because
-  they depend on per-request identity headers.
-
-Dispatch owns `/signin-with-chatgpt`, `/signout-with-chatgpt`, `/callback`, the
-OAuth cookies, and identity header injection. Do not implement app routes for
-those reserved paths. Routes that do not import and call the helper remain
-anonymous-compatible.
-
-SIWC establishes identity only; it does not prove workspace membership. Use the
-Sites hosting platform's access policy controls for workspace-wide restrictions,
-or enforce explicit server-side membership or allowlist checks.
-
-Use SIWC for account pages, user-specific dashboards, saved records, and write
-actions tied to the current ChatGPT user. Leave public content anonymous.
-
-## Useful Commands
-
-- `npm run dev`: start local development
-- `npm run build`: verify the vinext build output
-- `npm test`: build the starter and verify its rendered loading skeleton
-- `npm run db:generate`: generate Drizzle migrations after schema changes
-
-## Learn More
-
-- [vinext Documentation](https://github.com/cloudflare/vinext)
-- [Drizzle D1 Guide](https://orm.drizzle.team/docs/get-started/d1-new)
