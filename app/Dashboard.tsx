@@ -257,13 +257,13 @@ function ModelCard({
         "--model-contrast": modelContrastColor(series.id),
       } as CSSProperties}
     >
-      <span className="model-card-label">{label}</span>
-      <span className="model-card-body">
-        <strong>{score}</strong>
-        <span>
-          <b>{price}</b>
-          <small>{duration}</small>
-        </span>
+      <span className="model-card-main">
+        <span className="model-card-label">{label}</span>
+        <strong className="model-card-score">{score}</strong>
+      </span>
+      <span className="model-card-meta">
+        <b>{price}</b>
+        <small>{duration}</small>
       </span>
     </button>
   );
