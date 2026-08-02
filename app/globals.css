@@ -111,10 +111,7 @@ main::after {
 footer,
 footer small { color: var(--muted); }
 
-.probability-card { background: linear-gradient(145deg, #293d9c, #19275e); }
-.probability-card.watch { background: linear-gradient(145deg, #8d2d5c, #461a47); }
-.probability-card.high { background: linear-gradient(145deg, #754286, #2a215d); }
-.probability-card a:hover, .source-caption a:hover, .quota-table a:hover, footer a:hover { color: var(--yellow); }
+.source-caption a:hover, .quota-table a:hover, footer a:hover { color: var(--yellow); }
 .error-message { color: #10152f; background: #f0a65b; }
 
 .timeline-section,
@@ -207,7 +204,7 @@ main::before {
 .eyebrow { margin: 0 0 10px; color: var(--muted); font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace; font-size: 10px; font-weight: 800; letter-spacing: .17em; text-transform: uppercase; }
 .signal-panel {
   display: grid;
-  grid-template-columns: minmax(0, 1.35fr) minmax(280px, .65fr);
+  grid-template-columns: minmax(0, 1fr);
   overflow: hidden;
   border: 4px solid var(--line);
   border-radius: 30px 36px 32px 43px;
@@ -225,13 +222,7 @@ main::before {
 .latest-card .latest-timezone { display: block; margin-top: 17px; color: var(--muted); font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace; font-size: 12px; font-weight: 750; letter-spacing: .03em; }
 .latest-card a { display: inline-block; margin-top: 11px; color: var(--mint-deep); font-size: 12px; font-weight: 900; text-decoration: underline; text-decoration-thickness: 2px; text-underline-offset: 3px; }
 .latest-card a:hover { color: var(--ink); }
-.probability-card { background: var(--sky); }
-.probability-card.watch { background: var(--pink); }
-.probability-card.high { background: #ffb166; }
-.probability-card strong { display: block; margin-top: 22px; color: var(--ink); font-size: clamp(56px, 6vw, 78px); font-weight: 950; letter-spacing: -.08em; line-height: .82; }
 .signal-panel > article > span { display: block; margin-top: 19px; color: #4c4641; font-size: 11px; font-weight: 750; line-height: 1.45; }
-.probability-card a { color: inherit; text-decoration: underline; text-decoration-thickness: 2px; text-underline-offset: 3px; }
-.probability-card a:hover { color: var(--mint-deep); }
 .source-caption { margin: 19px 4px 0; color: var(--muted); font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace; font-size: 10px; font-weight: 700; letter-spacing: .02em; line-height: 1.45; }
 .source-caption a { color: var(--ink); text-decoration: underline; text-decoration-thickness: 1.5px; text-underline-offset: 2px; }
 .source-caption a:hover { color: var(--mint-deep); }
@@ -384,7 +375,6 @@ footer small { color: #6a5f52; font-family: ui-monospace, SFMono-Regular, Menlo,
   .signal-panel article { min-height: auto; padding: 25px 23px 23px; border-right: 0; border-bottom: 3px solid var(--line); }
   .signal-panel article:last-child { border-bottom: 0; }
   .latest-reset-time { gap: 10px; margin-top: 14px; padding: 10px 14px 13px; border-width: 2.5px; box-shadow: 3px 4px 0 var(--shadow); font-size: clamp(34px, 10vw, 54px); }
-  .probability-card strong { margin-top: 16px; font-size: 60px; }
   .timeline-section, .chart-section { margin-top: 32px; padding: 22px 19px 23px; border-width: 2.5px; border-radius: 21px 25px 20px 27px; box-shadow: 6px 7px 0 var(--shadow); transform: none; }
   .section-heading { display: block; padding-bottom: 13px; }
   .section-heading h2 { font-size: 31px; }
@@ -483,10 +473,7 @@ main::before {
 footer,
 footer small { color: var(--muted); }
 
-.probability-card { background: linear-gradient(145deg, #293d9c, #19275e); }
-.probability-card.watch { background: linear-gradient(145deg, #8d2d5c, #461a47); }
-.probability-card.high { background: linear-gradient(145deg, #754286, #2a215d); }
-.probability-card a:hover, .source-caption a:hover, .quota-table a:hover, footer a:hover { color: var(--yellow); }
+.source-caption a:hover, .quota-table a:hover, footer a:hover { color: var(--yellow); }
 .error-message { color: #10152f; background: #f0a65b; }
 
 .timeline-section,

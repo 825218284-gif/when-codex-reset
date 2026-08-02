@@ -12,7 +12,6 @@ const metricMeta: Record<ModelMetric, { label: string; unit: string }> = {
 };
 
 const CODEX_RESETS_URL = "https://codex-resets.com/";
-const RESET_RADAR_URL = "https://codexresetradar.com/";
 const CODEX_RADAR_URL = "https://codexradar.com/";
 
 function briefingUrl() {
@@ -137,13 +136,6 @@ function formatCardCost(value: number | null) {
 function formatSignedValue(value: number, unit: string) {
   const sign = value > 0 ? "+" : value < 0 ? "−" : "";
   return `${sign}${formatValue(Math.abs(value), unit)}`;
-}
-
-function probabilityTone(value: number | null | undefined) {
-  if (value === null || value === undefined) return "unknown";
-  if (value >= 60) return "high";
-  if (value >= 30) return "watch";
-  return "calm";
 }
 
 function SourceCaption({ href, label }: { href: string; label: string }) {
@@ -490,8 +482,6 @@ export default function Dashboard() {
     return () => window.clearTimeout(initialLoad);
   }, []);
 
-  const probability = data?.probability48h;
-  const tone = probabilityTone(probability);
   const quota = data?.quotaTrends.find((series) => series.id === "pro20-7d") ?? data?.quotaTrends[0];
   const modelTrends = data?.modelTrends ?? [];
   const knownSelectedModelIds = selectedModelIds.filter((id) => modelTrends.some((series) => series.id === id));
@@ -539,7 +529,7 @@ export default function Dashboard() {
           </button>
         </nav>
 
-        <section className="signal-panel" id="top" aria-label="重置信号摘要">
+        <section className="signal-panel" id="top" aria-label="最近一次重置">
           <article className="latest-card">
             <p>最近一次重置</p>
             <strong className="latest-reset-time">
@@ -550,15 +540,6 @@ export default function Dashboard() {
             {data?.latestConfirmed ? (
               <a href={data.latestConfirmed.sourceUrl} target="_blank" rel="noreferrer">查看原始来源 ↗</a>
             ) : null}
-          </article>
-          <article className={`probability-card ${tone}`}>
-            <p>未来 48 小时重置可能性</p>
-            <strong>{probability === null || probability === undefined ? "—" : `${probability}%`}</strong>
-            <span>
-              <a href={RESET_RADAR_URL} target="_blank" rel="noreferrer">
-                {data?.probabilitySource ?? "正在读取公开来源"} ↗
-              </a>
-            </span>
           </article>
         </section>
         <SourceCaption href={CODEX_RESETS_URL} label="Codex Resets" />
@@ -696,9 +677,9 @@ export default function Dashboard() {
         </section>
 
         <footer>
-          <p>48 小时概率来自 Codex Reset Radar 的公开信号评估，不是 OpenAI 的承诺；个人账户的滚动限额请以 Codex 设置页为准。</p>
+          <p>公开重置记录、额度和模型数据来自页面标注来源；个人账户的滚动限额请以 Codex 设置页为准。</p>
           <div>
-            {data?.sources.map((source) => (
+            {data?.sources.filter((source) => source.name !== "Codex Reset Radar").map((source) => (
               <a href={source.url} target="_blank" rel="noreferrer" key={source.name}>
                 <i className={source.status} />{source.name} ↗
               </a>
