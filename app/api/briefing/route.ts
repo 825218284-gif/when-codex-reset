@@ -12,6 +12,7 @@ export const runtime = "edge";
 export const dynamic = "force-dynamic";
 
 const CODEX_RADAR_API = "https://codexradar.com/current.json";
+const CODEX_RADAR_INTELLIGENCE_API = "https://codexradar.com/data/intelligence-efficiency.json";
 const CODEX_RADAR_SITE = "https://codexradar.com/";
 const CODEX_RESETS_SITE = "https://codex-resets.com/";
 const RESET_RADAR_SITE = "https://codexresetradar.com/";
@@ -213,6 +214,71 @@ function collectModelTrends(radar: UnknownRecord): ModelTrendSeries[] {
   });
 }
 
+const intelligenceConfigurations = [
+  { id: "gpt_56_sol_ultra", model: "gpt-5.6-sol", effort: "ultra", label: "GPT-5.6 Sol ultra" },
+  { id: "gpt_56_sol_max", model: "gpt-5.6-sol", effort: "max", label: "GPT-5.6 Sol max" },
+  { id: "gpt_56_sol_xhigh", model: "gpt-5.6-sol", effort: "xhigh", label: "GPT-5.6 Sol xhigh" },
+  { id: "gpt_56_sol_high", model: "gpt-5.6-sol", effort: "high", label: "GPT-5.6 Sol high" },
+  { id: "gpt_56_sol_medium", model: "gpt-5.6-sol", effort: "medium", label: "GPT-5.6 Sol medium" },
+  { id: "gpt_56_sol_low", model: "gpt-5.6-sol", effort: "low", label: "GPT-5.6 Sol low" },
+  { id: "gpt_56_terra_ultra", model: "gpt-5.6-terra", effort: "ultra", label: "GPT-5.6 Terra ultra" },
+  { id: "gpt_56_terra_max", model: "gpt-5.6-terra", effort: "max", label: "GPT-5.6 Terra max" },
+  { id: "gpt_56_terra_xhigh", model: "gpt-5.6-terra", effort: "xhigh", label: "GPT-5.6 Terra xhigh" },
+  { id: "gpt_56_terra_high", model: "gpt-5.6-terra", effort: "high", label: "GPT-5.6 Terra high" },
+  { id: "gpt_56_terra_medium", model: "gpt-5.6-terra", effort: "medium", label: "GPT-5.6 Terra medium" },
+  { id: "gpt_56_terra_low", model: "gpt-5.6-terra", effort: "low", label: "GPT-5.6 Terra low" },
+  { id: "gpt_56_luna_max", model: "gpt-5.6-luna", effort: "max", label: "GPT-5.6 Luna max" },
+  { id: "gpt_56_luna_xhigh", model: "gpt-5.6-luna", effort: "xhigh", label: "GPT-5.6 Luna xhigh" },
+  { id: "gpt_56_luna_high", model: "gpt-5.6-luna", effort: "high", label: "GPT-5.6 Luna high" },
+  { id: "gpt_56_luna_medium", model: "gpt-5.6-luna", effort: "medium", label: "GPT-5.6 Luna medium" },
+  { id: "gpt_56_luna_low", model: "gpt-5.6-luna", effort: "low", label: "GPT-5.6 Luna low" },
+  { id: "gpt_55_xhigh", model: "gpt-5.5", effort: "xhigh", label: "GPT-5.5 xhigh" },
+  { id: "gpt_55_high", model: "gpt-5.5", effort: "high", label: "GPT-5.5 high" },
+] as const;
+
+function intelligencePoint(raw: UnknownRecord, at: string): ModelTrendPoint | null {
+  const score = asNumber(raw.iq);
+  if (!at || score === null) return null;
+  const cost = asNumber(raw.average_price_usd);
+  const minutes = asNumber(raw.average_minutes);
+  return {
+    at,
+    score,
+    cost,
+    value: cost !== null && cost > 0 ? score / cost : null,
+    duration: minutes === null ? null : `${Math.round(minutes)}分钟`,
+  };
+}
+
+function collectIntelligenceModelTrends(payload: UnknownRecord): ModelTrendSeries[] {
+  const latestAt = asString(payload.source_updated_at);
+  const latestRows = Array.isArray(payload.points) ? payload.points.map(asRecord) : [];
+  const history = Array.isArray(payload.history) ? payload.history.map(asRecord) : [];
+
+  return intelligenceConfigurations.flatMap((configuration) => {
+    const byTime = new Map<string, ModelTrendPoint>();
+    for (const snapshot of history) {
+      const at = asString(snapshot.at);
+      const row = (Array.isArray(snapshot.points) ? snapshot.points : [])
+        .map(asRecord)
+        .find((candidate) => asString(candidate.model) === configuration.model
+          && asString(candidate.effort) === configuration.effort);
+      const point = row ? intelligencePoint(row, at) : null;
+      if (point) byTime.set(point.at, point);
+    }
+
+    const latest = latestRows.find((candidate) => asString(candidate.model) === configuration.model
+      && asString(candidate.effort) === configuration.effort);
+    const current = latest ? intelligencePoint(latest, latestAt) : null;
+    if (current) byTime.set(current.at, current);
+
+    const points = [...byTime.values()]
+      .sort((a, b) => a.at.localeCompare(b.at))
+      .slice(-10);
+    return points.length ? [{ id: configuration.id, label: configuration.label, points }] : [];
+  });
+}
+
 function collectQuotaTrends(radar: UnknownRecord): QuotaTrendSeries[] {
   const quotaRadar = asRecord(asRecord(radar.model_iq).quota_radar);
   const rows = Array.isArray(quotaRadar.trend) ? quotaRadar.trend : [];
@@ -255,7 +321,7 @@ function collectQuotaSnapshot(radar: UnknownRecord): QuotaSnapshotRow[] {
 }
 
 export async function GET() {
-  const [resetResult, probabilityResult, codexResult] = await Promise.allSettled([
+  const [resetResult, probabilityResult, codexResult, intelligenceResult] = await Promise.allSettled([
     fetch(CODEX_RESETS_SITE, {
       headers: {
         accept: "text/html",
@@ -283,17 +349,26 @@ export async function GET() {
       if (!response.ok) throw new Error(`Codex Radar returned ${response.status}`);
       return (await response.json()) as UnknownRecord;
     }),
+    fetch(CODEX_RADAR_INTELLIGENCE_API, {
+      headers: { accept: "application/json" },
+      cache: "no-store",
+    }).then(async (response) => {
+      if (!response.ok) throw new Error(`Codex Radar intelligence data returned ${response.status}`);
+      return (await response.json()) as UnknownRecord;
+    }),
   ]);
 
   const codexResets = resetResult.status === "fulfilled" ? resetResult.value : null;
   const resetRadarProbability = probabilityResult.status === "fulfilled" ? probabilityResult.value : null;
   const codexRadar = codexResult.status === "fulfilled" ? codexResult.value : null;
+  const intelligence = intelligenceResult.status === "fulfilled" ? intelligenceResult.value : null;
+  const intelligenceModels = intelligence ? collectIntelligenceModelTrends(intelligence) : [];
   const briefing: ResetBriefing = {
     generatedAt: codexResets?.generatedAt ?? new Date().toISOString(),
     sources: [
       { name: "Codex Resets", url: CODEX_RESETS_SITE, status: codexResets ? "live" : "unavailable" },
       { name: "Codex Reset Radar", url: RESET_RADAR_SITE, status: resetRadarProbability !== null ? "live" : "unavailable" },
-      { name: "Codex 雷达", url: CODEX_RADAR_SITE, status: codexRadar ? "live" : "unavailable" },
+      { name: "Codex 雷达", url: CODEX_RADAR_SITE, status: codexRadar || intelligenceModels.length ? "live" : "unavailable" },
     ],
     verdict: codexResets?.verdict ?? "暂时无法核验",
     verdictDetail: codexResets
@@ -310,14 +385,20 @@ export async function GET() {
       : null,
     quotaSnapshot: codexRadar ? collectQuotaSnapshot(codexRadar) : [],
     quotaTrends: codexRadar ? collectQuotaTrends(codexRadar) : [],
-    modelUpdatedAt: codexRadar
-      ? asString(asRecord(asRecord(codexRadar.model_iq).latest).date) || null
-      : null,
-    modelTrends: codexRadar ? collectModelTrends(codexRadar) : [],
+    modelUpdatedAt: intelligence
+      ? asString(intelligence.source_updated_at) || null
+      : codexRadar
+        ? asString(asRecord(asRecord(codexRadar.model_iq).latest).date) || null
+        : null,
+    modelTrends: intelligenceModels.length
+      ? intelligenceModels
+      : codexRadar
+        ? collectModelTrends(codexRadar)
+        : [],
   };
 
   return Response.json(briefing, {
-    status: codexResets || resetRadarProbability !== null || codexRadar ? 200 : 502,
+    status: codexResets || resetRadarProbability !== null || codexRadar || intelligenceModels.length ? 200 : 502,
     headers: {
       "Cache-Control": "public, max-age=120, s-maxage=300, stale-while-revalidate=600",
     },

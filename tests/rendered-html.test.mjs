@@ -51,5 +51,14 @@ test("GitHub Pages build contains the dashboard and a usable data snapshot", asy
   assert.ok(Array.isArray(snapshot.sources) && snapshot.sources.length === 3);
   assert.ok(Array.isArray(snapshot.history) && snapshot.history.length > 0);
   assert.ok(Array.isArray(snapshot.quotaSnapshot) && snapshot.quotaSnapshot.length > 0);
-  assert.ok(Array.isArray(snapshot.modelTrends) && snapshot.modelTrends.length > 0);
+  assert.equal(snapshot.modelTrends.length, 19);
+  assert.deepEqual(
+    snapshot.modelTrends.map((series) => series.id),
+    [
+      "gpt_56_sol_ultra", "gpt_56_sol_max", "gpt_56_sol_xhigh", "gpt_56_sol_high", "gpt_56_sol_medium", "gpt_56_sol_low",
+      "gpt_56_terra_ultra", "gpt_56_terra_max", "gpt_56_terra_xhigh", "gpt_56_terra_high", "gpt_56_terra_medium", "gpt_56_terra_low",
+      "gpt_56_luna_max", "gpt_56_luna_xhigh", "gpt_56_luna_high", "gpt_56_luna_medium", "gpt_56_luna_low",
+      "gpt_55_xhigh", "gpt_55_high",
+    ],
+  );
 });

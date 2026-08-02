@@ -24,21 +24,22 @@ function briefingUrl() {
 }
 
 function modelColor(id: string) {
-  if (id.includes("_sol_max") || id.includes("_sol_xhigh")) return "#f5c518";
+  if (id.includes("_sol_ultra") || id.includes("_sol_max") || id.includes("_sol_xhigh")) return "#f5c518";
   if (id.includes("_sol_high")) return "#e98500";
   if (id.includes("_sol_medium")) return "#a64b16";
   if (id.includes("_sol_low")) return "#804016";
-  if (id.includes("_terra_max")) return "#5b9df1";
-  if (id.includes("_terra_high")) return "#2d67e7";
-  if (id.includes("_luna_max")) return "#ff6f8a";
-  if (id.includes("_luna_high")) return "#e61f4d";
+  if (id.includes("_terra_ultra") || id.includes("_terra_max")) return "#5b9df1";
+  if (id.includes("_terra_high") || id.includes("_terra_medium") || id.includes("_terra_low")) return "#2d67e7";
+  if (id.includes("_luna_max") || id.includes("_luna_xhigh")) return "#ff6f8a";
+  if (id.includes("_luna_high") || id.includes("_luna_medium") || id.includes("_luna_low")) return "#e61f4d";
   if (id.includes("gpt_55")) return "#21c66a";
   return "#806ef2";
 }
 
 function modelContrastColor(id: string) {
   if (id.includes("_sol_medium") || id.includes("_sol_low")) return "#ffffff";
-  if (id.includes("_terra_high") || id.includes("_luna_high")) return "#ffffff";
+  if (id.includes("_terra_high") || id.includes("_terra_medium") || id.includes("_terra_low")) return "#ffffff";
+  if (id.includes("_luna_high") || id.includes("_luna_medium") || id.includes("_luna_low")) return "#ffffff";
   return "#10152f";
 }
 
