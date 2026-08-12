@@ -7,15 +7,24 @@ import type {
   ResetBriefing,
   TrendPoint,
 } from "../../lib/briefing";
+import { hasCompleteModelSet, hasCompleteQuotaData } from "../../lib/briefing.ts";
 
 export const runtime = "edge";
 export const dynamic = "force-dynamic";
 
 const CODEX_RADAR_API = "https://codexradar.com/current.json";
 const CODEX_RADAR_INTELLIGENCE_API = "https://codexradar.com/data/intelligence-efficiency.json";
-const CODEX_RADAR_SITE = "https://codexradar.com/";
 const CODEX_RESETS_SITE = "https://codex-resets.com/";
-const RESET_RADAR_SITE = "https://codexresetradar.com/";
+const SOURCE_TIMEOUT_MS = 15_000;
+const CODEX_RADAR_HOSTS = new Set(["codexradar.com", "www.codexradar.com"]);
+const RESET_PAGE_HOSTS = new Set(["codex-resets.com", "www.codex-resets.com"]);
+const RESET_LINK_HOSTS = new Set([
+  ...RESET_PAGE_HOSTS,
+  "x.com",
+  "www.x.com",
+  "twitter.com",
+  "www.twitter.com",
+]);
 
 type UnknownRecord = Record<string, unknown>;
 
@@ -49,29 +58,15 @@ function plainText(value: string) {
   return decodeHtml(value.replace(/<[^>]+>/g, " ").replace(/\s+/g, " ")).trim();
 }
 
-function readEmbeddedNumber(html: string, key: string) {
-  const safeKey = key.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
-  const candidates = [
-    new RegExp(`"${safeKey}":(\\d+(?:\\.\\d+)?)`),
-    new RegExp(String.raw`\\"${safeKey}\\":(\d+(?:\.\d+)?)`),
-  ];
-  for (const candidate of candidates) {
-    const value = asNumber(html.match(candidate)?.[1]);
-    if (value !== null) return value;
+function safeHttpsUrl(value: string, allowedHosts?: ReadonlySet<string>) {
+  try {
+    const url = new URL(value, CODEX_RESETS_SITE);
+    if (url.protocol !== "https:") return null;
+    if (allowedHosts && !allowedHosts.has(url.hostname.toLowerCase())) return null;
+    return url.href;
+  } catch {
+    return null;
   }
-  return null;
-}
-
-function parseResetRadarProbability(html: string) {
-  const visibleText = plainText(
-    html
-      .replace(/<script[\s\S]*?<\/script>/gi, " ")
-      .replace(/<style[\s\S]*?<\/style>/gi, " "),
-  );
-  const visibleProbability = asNumber(
-    visibleText.match(/Next 48h reset chance\s+(\d+(?:\.\d+)?)%/i)?.[1],
-  );
-  return readEmbeddedNumber(html, "next48hProbability") ?? visibleProbability;
 }
 
 function formatResetTimelineTime(value: string) {
@@ -99,32 +94,40 @@ function resetTitle(text: string) {
   return value.length > 58 ? `${value.slice(0, 58)}…` : value || "已记录额度重置";
 }
 
-function parseCodexResets(html: string) {
-  const history: HardResetEvent[] = [];
+export function parseCodexResets(html: string) {
+  const parsedHistory: Array<HardResetEvent & { occurredAt: string }> = [];
   const items = html.matchAll(/<li\b[^>]*class=["'][^"']*\blog-item\b[^"']*["'][^>]*>([\s\S]*?)<\/li>/gi);
 
   for (const [index, item] of [...items].entries()) {
     const body = item[1];
     const occurredAt = body.match(/data-datetime=["']([^"']+)["']/i)?.[1];
-    const sourceUrl = [...body.matchAll(/<a\b([^>]*)>/gi)]
+    const rawSourceUrl = [...body.matchAll(/<a\b([^>]*)>/gi)]
       .find((anchor) => /class=["'][^"']*\blog-item-link\b/i.test(anchor[1]))?.[1]
       ?.match(/href=["']([^"']+)["']/i)?.[1] ?? CODEX_RESETS_SITE;
+    const sourceUrl = safeHttpsUrl(rawSourceUrl, RESET_LINK_HOSTS) ?? CODEX_RESETS_SITE;
     const text = body.match(/<p\b[^>]*class=["'][^"']*\blog-item-text\b[^"']*["'][^>]*>([\s\S]*?)<\/p>/i)?.[1];
-    if (!occurredAt || !text) continue;
-    history.push({
+    if (!occurredAt || !text || Number.isNaN(Date.parse(occurredAt))) continue;
+    parsedHistory.push({
       id: sourceUrl.split("/").at(-1) || `reset-${index + 1}`,
       date: formatResetTimelineTime(occurredAt),
       title: resetTitle(text),
       sourceUrl,
+      occurredAt,
     });
   }
 
-  const hero = html.match(/<span\b[^>]*class=["'][^"']*\bhero-figure\b[^"']*["'][^>]*>/i)?.[0] ?? "";
-  const lastResetAt = hero.match(/data-datetime=["']([^"']+)["']/i)?.[1] ?? null;
+  parsedHistory.sort((a, b) => Date.parse(b.occurredAt) - Date.parse(a.occurredAt));
+  const history: HardResetEvent[] = parsedHistory.map((event) => ({
+    id: event.id,
+    date: event.date,
+    title: event.title,
+    sourceUrl: event.sourceUrl,
+  }));
+
   const generatedNode = html.match(/<[^>]*data-role=["']generated-at["'][^>]*>/i)?.[0] ?? "";
   const generatedAt = generatedNode.match(/data-datetime=["']([^"']+)["']/i)?.[1] ?? null;
   const totalResets = asNumber(html.match(/<dt>\s*Total resets\s*<\/dt>[\s\S]*?<dd[^>]*>\s*(\d+)/i)?.[1]) ?? history.length;
-  const latest = history[0];
+  const latest = parsedHistory[0];
 
   return {
     generatedAt,
@@ -132,86 +135,9 @@ function parseCodexResets(html: string) {
     totalResets,
     verdict: latest ? "最近一次额度重置已记录" : "正在读取额度重置记录",
     latestConfirmed: latest
-      ? { title: latest.title, occurredAt: lastResetAt, sourceUrl: latest.sourceUrl }
+      ? { title: latest.title, occurredAt: latest.occurredAt, sourceUrl: latest.sourceUrl }
       : null,
   };
-}
-
-function formatModelName(model: unknown, effort: unknown, fallback: string) {
-  const family = asString(model)
-    .replace(/^gpt-/i, "GPT-")
-    .replace(/-(sol|terra|luna)$/i, (_, name: string) => ` ${name[0].toUpperCase()}${name.slice(1).toLowerCase()}`);
-  const reasoning = asString(effort);
-  return family ? `${family}${reasoning ? ` ${reasoning}` : ""}` : fallback;
-}
-
-function modelPoint(raw: UnknownRecord): ModelTrendPoint | null {
-  const at = asString(raw.date);
-  if (!at) return null;
-  const score = asNumber(raw.score);
-  const cost = asNumber(raw.average_cost_usd);
-  return {
-    at,
-    score,
-    cost,
-    value: score !== null && cost !== null && cost > 0 ? score / cost : null,
-    duration: asString(raw.average_task_time_human) || null,
-  };
-}
-
-function modelSeries(id: string, label: string, days: unknown, latest: UnknownRecord): ModelTrendSeries | null {
-  const points = (Array.isArray(days) ? days : [])
-    .map((day) => modelPoint(asRecord(day)))
-    .filter((point): point is ModelTrendPoint => point !== null);
-  const current = modelPoint(latest);
-  if (current) {
-    const index = points.findIndex((point) => point.at === current.at);
-    if (index >= 0) points[index] = current;
-    else points.push(current);
-  }
-  points.sort((a, b) => a.at.localeCompare(b.at));
-  return points.length ? { id, label, points } : null;
-}
-
-function collectModelTrends(radar: UnknownRecord): ModelTrendSeries[] {
-  const modelIq = asRecord(radar.model_iq);
-  const latest = asRecord(modelIq.latest);
-  const items: ModelTrendSeries[] = [];
-  const primary = modelSeries(
-    "gpt_56_sol_max",
-    formatModelName(latest.model, latest.reasoning_effort, "当前最高分配置"),
-    modelIq.recent_days,
-    latest,
-  );
-  if (primary) items.push(primary);
-
-  const comparisons = asRecord(modelIq.comparisons);
-  for (const [id, raw] of Object.entries(comparisons)) {
-    const entry = asRecord(raw);
-    const current = asRecord(entry.latest);
-    const label = asString(entry.label, formatModelName(current.model, current.reasoning_effort, id));
-    const series = modelSeries(id, label, entry.recent_days, current);
-    if (series) items.push(series);
-  }
-
-  const order = [
-    "gpt_56_sol_max",
-    "gpt_56_sol_xhigh",
-    "gpt_56_sol_high",
-    "gpt_56_sol_medium",
-    "gpt_56_sol_low",
-    "gpt_56_terra_max",
-    "gpt_56_terra_high",
-    "gpt_56_luna_max",
-    "gpt_56_luna_high",
-    "gpt_55_high_distributed",
-  ];
-  return items.sort((a, b) => {
-    const aRank = order.indexOf(a.id);
-    const bRank = order.indexOf(b.id);
-    return (aRank < 0 ? Number.MAX_SAFE_INTEGER : aRank) - (bRank < 0 ? Number.MAX_SAFE_INTEGER : bRank)
-      || a.label.localeCompare(b.label);
-  });
 }
 
 const intelligenceConfigurations = [
@@ -320,87 +246,150 @@ function collectQuotaSnapshot(radar: UnknownRecord): QuotaSnapshotRow[] {
   });
 }
 
+async function fetchTextSource(
+  rawUrl: string,
+  allowedHosts: ReadonlySet<string>,
+  headers: HeadersInit,
+) {
+  const url = safeHttpsUrl(rawUrl, allowedHosts);
+  if (!url) throw new Error("Rejected non-HTTPS or unapproved reset source URL");
+  const response = await fetch(url, {
+    headers,
+    cache: "no-store",
+    redirect: "error",
+    signal: AbortSignal.timeout(SOURCE_TIMEOUT_MS),
+  });
+  if (!response.ok) throw new Error(`Source returned ${response.status}`);
+  if (response.url && !safeHttpsUrl(response.url, allowedHosts)) {
+    throw new Error("Reset source redirected outside the approved HTTPS hosts");
+  }
+  return response.text();
+}
+
+async function fetchJsonSource(rawUrl: string, allowedHosts: ReadonlySet<string>) {
+  const url = safeHttpsUrl(rawUrl, allowedHosts);
+  if (!url) throw new Error("Rejected non-HTTPS source URL");
+  const response = await fetch(url, {
+    headers: { accept: "application/json" },
+    cache: "no-store",
+    redirect: "error",
+    signal: AbortSignal.timeout(SOURCE_TIMEOUT_MS),
+  });
+  if (!response.ok) throw new Error(`Source returned ${response.status}`);
+  if (response.url && !safeHttpsUrl(response.url, allowedHosts)) {
+    throw new Error("Source redirected outside the approved HTTPS hosts");
+  }
+  return (await response.json()) as UnknownRecord;
+}
+
+function failureDetail(result: PromiseSettledResult<unknown>, fallback: string) {
+  if (result.status === "fulfilled") return fallback;
+  return result.reason instanceof Error ? result.reason.message : fallback;
+}
+
+function dataIsOlderThan(value: string | null, maxAgeMs: number) {
+  if (!value) return true;
+  const time = Date.parse(value);
+  return !Number.isFinite(time) || Date.now() - time > maxAgeMs;
+}
+
 export async function GET() {
-  const [resetResult, probabilityResult, codexResult, intelligenceResult] = await Promise.allSettled([
-    fetch(CODEX_RESETS_SITE, {
-      headers: {
+  const startedAt = new Date().toISOString();
+  const [resetResult, codexResult, intelligenceResult] = await Promise.allSettled([
+    fetchTextSource(
+      CODEX_RESETS_SITE,
+      RESET_PAGE_HOSTS,
+      {
         accept: "text/html",
         "user-agent": "Codex-Reset-Timeline/1.0 (source mirror)",
       },
-      cache: "no-store",
-    }).then(async (response) => {
-      if (!response.ok) throw new Error(`Codex Resets returned ${response.status}`);
-      return parseCodexResets(await response.text());
-    }),
-    fetch(RESET_RADAR_SITE, {
-      headers: {
-        accept: "text/html",
-        "user-agent": "Codex-Reset-Probability/1.0 (public-source summary)",
-      },
-      cache: "no-store",
-    }).then(async (response) => {
-      if (!response.ok) throw new Error(`Codex Reset Radar returned ${response.status}`);
-      return parseResetRadarProbability(await response.text());
-    }),
-    fetch(CODEX_RADAR_API, {
-      headers: { accept: "application/json" },
-      cache: "no-store",
-    }).then(async (response) => {
-      if (!response.ok) throw new Error(`Codex Radar returned ${response.status}`);
-      return (await response.json()) as UnknownRecord;
-    }),
-    fetch(CODEX_RADAR_INTELLIGENCE_API, {
-      headers: { accept: "application/json" },
-      cache: "no-store",
-    }).then(async (response) => {
-      if (!response.ok) throw new Error(`Codex Radar intelligence data returned ${response.status}`);
-      return (await response.json()) as UnknownRecord;
-    }),
+    ).then(parseCodexResets),
+    fetchJsonSource(CODEX_RADAR_API, CODEX_RADAR_HOSTS),
+    fetchJsonSource(CODEX_RADAR_INTELLIGENCE_API, CODEX_RADAR_HOSTS),
   ]);
 
-  const codexResets = resetResult.status === "fulfilled" ? resetResult.value : null;
-  const resetRadarProbability = probabilityResult.status === "fulfilled" ? probabilityResult.value : null;
+  const parsedResets = resetResult.status === "fulfilled" ? resetResult.value : null;
+  const codexResets = parsedResets?.history.length && parsedResets.latestConfirmed
+    ? parsedResets
+    : null;
   const codexRadar = codexResult.status === "fulfilled" ? codexResult.value : null;
   const intelligence = intelligenceResult.status === "fulfilled" ? intelligenceResult.value : null;
   const intelligenceModels = intelligence ? collectIntelligenceModelTrends(intelligence) : [];
+  const completeIntelligence = hasCompleteModelSet(intelligenceModels);
+  const quotaUpdatedAt = codexRadar
+    ? asString(asRecord(asRecord(codexRadar.model_iq).quota_radar).updated_at) || null
+    : null;
+  const quotaSnapshot = codexRadar ? collectQuotaSnapshot(codexRadar) : [];
+  const quotaTrends = codexRadar ? collectQuotaTrends(codexRadar) : [];
+  const quotaLive = Boolean(quotaUpdatedAt) && hasCompleteQuotaData(quotaSnapshot, quotaTrends);
+  const modelUpdatedAt = completeIntelligence
+    ? asString(intelligence?.source_updated_at) || null
+    : null;
+  const successfulSourceCount = Number(Boolean(codexResets)) + Number(quotaLive) + Number(completeIntelligence);
+  const completedAt = new Date().toISOString();
   const briefing: ResetBriefing = {
-    generatedAt: codexResets?.generatedAt ?? new Date().toISOString(),
+    generatedAt: successfulSourceCount ? completedAt : "",
     sources: [
-      { name: "Codex Resets", url: CODEX_RESETS_SITE, status: codexResets ? "live" : "unavailable" },
-      { name: "Codex Reset Radar", url: RESET_RADAR_SITE, status: resetRadarProbability !== null ? "live" : "unavailable" },
-      { name: "Codex 雷达", url: CODEX_RADAR_SITE, status: codexRadar || intelligenceModels.length ? "live" : "unavailable" },
+      {
+        key: "reset",
+        name: "Codex Resets",
+        url: CODEX_RESETS_SITE,
+        status: codexResets ? "live" : "unavailable",
+        lastSuccessAt: codexResets ? completedAt : null,
+        dataUpdatedAt: codexResets?.latestConfirmed?.occurredAt ?? null,
+        fallback: false,
+        stale: !codexResets,
+        detail: codexResets
+          ? "重置页面已成功读取。"
+          : failureDetail(resetResult, "页面未返回可配对的重置时间与标题。"),
+      },
+      {
+        key: "quota",
+        name: "Codex 雷达 · 额度",
+        url: CODEX_RADAR_API,
+        status: quotaLive ? "live" : "unavailable",
+        lastSuccessAt: quotaLive ? completedAt : null,
+        dataUpdatedAt: quotaUpdatedAt,
+        fallback: false,
+        stale: !quotaLive || dataIsOlderThan(quotaUpdatedAt, 24 * 60 * 60 * 1000),
+        detail: quotaLive
+          ? "额度快照和趋势已成功读取。"
+          : failureDetail(codexResult, "额度数据不完整。"),
+      },
+      {
+        key: "model",
+        name: "Codex 雷达 · 模型",
+        url: CODEX_RADAR_INTELLIGENCE_API,
+        status: completeIntelligence ? "live" : "unavailable",
+        lastSuccessAt: completeIntelligence ? completedAt : null,
+        dataUpdatedAt: modelUpdatedAt,
+        fallback: false,
+        stale: !completeIntelligence || dataIsOlderThan(modelUpdatedAt, 6 * 60 * 60 * 1000),
+        detail: completeIntelligence
+          ? "完整 19 个模型已成功读取。"
+          : intelligenceResult.status === "fulfilled"
+            ? `模型数据不完整（${intelligenceModels.length}/19），不会覆盖完整快照。`
+            : failureDetail(intelligenceResult, "模型数据不可用。"),
+      },
     ],
     verdict: codexResets?.verdict ?? "暂时无法核验",
     verdictDetail: codexResets
       ? `Codex Resets 已记录 ${codexResets.totalResets} 次额度重置；按 @thsottiaux 的 X 公告自动分类。`
       : "请稍后刷新，或直接打开来源站点。",
-    probability48h: resetRadarProbability,
-    probabilitySource: resetRadarProbability === null
-      ? "Codex Reset Radar 暂未提供 48 小时概率"
-      : "Codex Reset Radar 48 小时评估",
     latestConfirmed: codexResets?.latestConfirmed ?? null,
     history: codexResets?.history.slice(0, 4) ?? [],
-    quotaUpdatedAt: codexRadar
-      ? asString(asRecord(asRecord(codexRadar.model_iq).quota_radar).updated_at) || null
-      : null,
-    quotaSnapshot: codexRadar ? collectQuotaSnapshot(codexRadar) : [],
-    quotaTrends: codexRadar ? collectQuotaTrends(codexRadar) : [],
-    modelUpdatedAt: intelligence
-      ? asString(intelligence.source_updated_at) || null
-      : codexRadar
-        ? asString(asRecord(asRecord(codexRadar.model_iq).latest).date) || null
-        : null,
-    modelTrends: intelligenceModels.length
-      ? intelligenceModels
-      : codexRadar
-        ? collectModelTrends(codexRadar)
-        : [],
+    quotaUpdatedAt: quotaLive ? quotaUpdatedAt : null,
+    quotaSnapshot: quotaLive ? quotaSnapshot : [],
+    quotaTrends: quotaLive ? quotaTrends : [],
+    modelUpdatedAt,
+    modelTrends: completeIntelligence ? intelligenceModels : [],
   };
 
   return Response.json(briefing, {
-    status: codexResets || resetRadarProbability !== null || codexRadar || intelligenceModels.length ? 200 : 502,
+    status: successfulSourceCount ? 200 : 502,
     headers: {
       "Cache-Control": "public, max-age=120, s-maxage=300, stale-while-revalidate=600",
+      "X-Briefing-Started-At": startedAt,
     },
   });
 }

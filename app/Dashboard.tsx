@@ -12,7 +12,71 @@ const metricMeta: Record<ModelMetric, { label: string; unit: string }> = {
 };
 
 const CODEX_RESETS_URL = "https://codex-resets.com/";
-const CODEX_RADAR_URL = "https://codexradar.com/";
+const CODEX_RADAR_CURRENT_URL = "https://codexradar.com/current.json";
+const CODEX_RADAR_INTELLIGENCE_URL = "https://codexradar.com/data/intelligence-efficiency.json";
+
+type FreshnessState = "fresh" | "stale" | "cached" | "unavailable" | "loading";
+
+type ExtendedSource = ResetBriefing["sources"][number] & {
+  cached?: boolean;
+  fallbackUsed?: boolean;
+  freshness?: string;
+  lastSuccessAt?: string | null;
+};
+
+function freshnessState(
+  data: ResetBriefing | null,
+  updatedAt: string | null | undefined,
+  sourceKey?: "reset" | "quota" | "model",
+  staleAfterHours = 6,
+): FreshnessState {
+  if (!data) return "loading";
+  const legacyName = sourceKey === "reset" ? "reset" : "radar";
+  const legacySources = data.sources.filter((candidate) => candidate.name.toLowerCase().includes(legacyName));
+  const source: ExtendedSource | undefined = sourceKey
+    ? (data.sources.find((candidate) => candidate.key === sourceKey)
+      ?? (sourceKey === "reset" ? legacySources[0] : legacySources.at(-1))) as ExtendedSource | undefined
+    : undefined;
+  const sourceStatus = source?.status ? String(source.status).toLowerCase() : "";
+  const sourceFreshness = source?.freshness?.toLowerCase() ?? "";
+  if (sourceStatus === "unavailable") return "unavailable";
+  if (source?.fallback || source?.fallbackUsed || source?.cached || sourceStatus === "fallback" || sourceStatus === "cached" || sourceFreshness === "cached") return "cached";
+  if (source?.stale || sourceStatus === "stale" || sourceFreshness === "stale") return "stale";
+
+  const timestamp = sourceKey === "reset"
+    ? source?.lastSuccessAt ?? updatedAt
+    : source?.dataUpdatedAt ?? source?.lastSuccessAt ?? updatedAt;
+  if (!timestamp) return "unavailable";
+  const parsed = new Date(timestamp);
+  if (Number.isNaN(parsed.getTime())) return "cached";
+  return Date.now() - parsed.getTime() > staleAfterHours * 60 * 60 * 1000 ? "stale" : "fresh";
+}
+
+function freshnessLabel(state: FreshnessState) {
+  return {
+    fresh: "数据新鲜",
+    stale: "数据陈旧",
+    cached: "使用缓存",
+    unavailable: "来源暂不可用",
+    loading: "正在读取",
+  }[state];
+}
+
+function freshnessHours(sourceKey: "reset" | "quota" | "model" | undefined) {
+  if (sourceKey === "reset") return 3;
+  if (sourceKey === "quota") return 24;
+  return 6;
+}
+
+function sourceIndicatorClass(state: FreshnessState) {
+  if (state === "fresh") return "live";
+  if (state === "cached") return "fallback";
+  return state;
+}
+
+function DataStatus({ state }: { state: FreshnessState }) {
+  return <span className={`data-status is-${state}`}>{freshnessLabel(state)}</span>;
+}
 
 function briefingUrl() {
   const staticUrl = typeof document === "undefined"
@@ -131,7 +195,8 @@ function formatValue(value: number, unit: string) {
 }
 
 function formatCardCost(value: number | null) {
-  return value === null ? "—" : `$${value.toFixed(1)}`;
+  if (value === null) return "—";
+  return `$${value.toFixed(Math.abs(value) < 0.1 ? 3 : 1)}`;
 }
 
 function formatSignedValue(value: number, unit: string) {
@@ -160,7 +225,8 @@ function CurveChart({
 }) {
   const width = 760;
   const height = 224;
-  const left = 50;
+  // Reserve enough SVG space for four-digit currency tick labels on narrow screens.
+  const left = 72;
   const right = 18;
   const top = 14;
   const bottom = 34;
@@ -283,12 +349,10 @@ function ModelComparisonChart({
   series,
   metric,
   selectedIds,
-  onToggle,
 }: {
   series: ModelTrendSeries[];
   metric: ModelMetric;
   selectedIds: string[];
-  onToggle: (id: string) => void;
 }) {
   const [hovered, setHovered] = useState<HoveredModelPoint | null>(null);
   const width = 820;
@@ -354,7 +418,7 @@ function ModelComparisonChart({
                 : "点击卡片开始对比"}
           </small>
         </div>
-        <p>点选卡片或曲线节点可增减对比模型</p>
+        <p>点选上方卡片可增减对比模型</p>
       </figcaption>
       <div className="model-curve-canvas" onPointerLeave={() => setHovered(null)}>
         <svg viewBox={`0 0 ${width} ${height}`} role="img" aria-label={`${meta.label} 多模型对比曲线`}>
@@ -421,7 +485,6 @@ function ModelComparisonChart({
                       fill={renderColor}
                       r={selected ? 4.3 : 3.1}
                       key={`${item.id}-${point.at}`}
-                      onClick={() => onToggle(item.id)}
                       onPointerEnter={() => setHovered({
                         label: shortModelLabel(item.label),
                         at: point.at,
@@ -449,8 +512,8 @@ function ModelComparisonChart({
         {hovered
           ? `${hovered.label} · ${formatChartDate(hovered.at)} · ${formatValue(hovered.value, meta.unit)}`
           : selectedSeries.length
-            ? `已选 ${selectedSeries.length} 个模型；点击卡片或节点可增减对比。`
-            : "暂未选择模型；点击任意卡片或曲线节点开始对比。"}
+            ? `已选 ${selectedSeries.length} 个模型；点击上方卡片可增减对比。`
+            : "暂未选择模型；点击任意模型卡片开始对比。"}
       </p>
     </figure>
   );
@@ -490,6 +553,10 @@ export default function Dashboard() {
   const selectedModels = modelTrends.filter((series) => activeSelectedModelIds.includes(series.id));
   const model = selectedModels[0] ?? null;
   const latestResetTime = formatBeijing(data?.latestConfirmed?.occurredAt);
+  const requestFailureState: FreshnessState | null = error ? (data ? "cached" : "unavailable") : null;
+  const resetFreshness = requestFailureState ?? freshnessState(data, data?.generatedAt, "reset", 3);
+  const quotaFreshness = requestFailureState ?? freshnessState(data, data?.quotaUpdatedAt, "quota", 24);
+  const modelFreshness = requestFailureState ?? freshnessState(data, data?.modelUpdatedAt, "model", 6);
   const toggleModel = (id: string) => {
     setSelectedModelIds((current) => {
       const visible = current.filter((candidate) => modelTrends.some((series) => series.id === candidate));
@@ -522,17 +589,23 @@ export default function Dashboard() {
         <nav className="topbar" aria-label="主导航">
           <a className="brand" href="#top">
             <span className="brand-signal" aria-hidden="true"><i /><i /><i /></span>
-            <span>Codex 重置雷达</span>
+            <h1>Codex 重置雷达</h1>
           </a>
-          <button className="refresh" onClick={() => void refresh()} disabled={loading}>
-            <span aria-hidden="true">↻</span>
-            {loading ? "更新中" : "刷新"}
-          </button>
+          <div className="refresh-area">
+            <button className="refresh" onClick={() => void refresh()} disabled={loading}>
+              <span aria-hidden="true">↻</span>
+              {loading ? "读取中" : "重新读取"}
+            </button>
+            <small>读取最近发布快照；目标每小时自动检查，实际时间可能受调度影响</small>
+          </div>
         </nav>
 
         <section className="signal-panel" id="top" aria-label="最近一次重置">
           <article className="latest-card">
-            <p>最近一次重置</p>
+            <div className="signal-label">
+              <p>最近一次重置</p>
+              <DataStatus state={resetFreshness} />
+            </div>
             <strong className="latest-reset-time">
               <span>{latestResetTime.date}</span>
               {latestResetTime.time ? <span>{latestResetTime.time}</span> : null}
@@ -553,14 +626,17 @@ export default function Dashboard() {
                 <p className="eyebrow">CONFIRMED HISTORY</p>
                 <h2 id="timeline-title">额度重置时间轴</h2>
               </div>
-              <a
-                className="timeline-latest-link"
-                href={data?.history[0]?.sourceUrl ?? CODEX_RESETS_URL}
-                target="_blank"
-                rel="noreferrer"
-              >
-                最新记录 ↗
-              </a>
+              <div className="timeline-heading-actions">
+                <DataStatus state={resetFreshness} />
+                <a
+                  className="timeline-latest-link"
+                  href={data?.history[0]?.sourceUrl ?? CODEX_RESETS_URL}
+                  target="_blank"
+                  rel="noreferrer"
+                >
+                  最新记录 ↗
+                </a>
+              </div>
             </div>
 
             {loading && !data ? <div className="timeline-loading"><i /><i /><i /></div> : null}
@@ -588,7 +664,10 @@ export default function Dashboard() {
               <p className="eyebrow">PUBLIC QUOTA TREND</p>
               <h2 id="quota-title">额度雷达</h2>
             </div>
-            <span>{formatSourceUpdatedAt(data?.quotaUpdatedAt)} 更新</span>
+            <div className="heading-status">
+              <span>{formatSourceUpdatedAt(data?.quotaUpdatedAt)} 更新</span>
+              <DataStatus state={quotaFreshness} />
+            </div>
           </div>
           <div className="quota-card">
             <div className="quota-card-heading">
@@ -610,9 +689,9 @@ export default function Dashboard() {
                 <tbody>
                   {data?.quotaSnapshot.map((row) => (
                     <tr key={row.tier}>
-                      <th scope="row">{row.tier}</th>
-                      <td>{row.sevenDayQuota === null ? "—" : formatValue(row.sevenDayQuota, "USD / 7d")}</td>
-                      <td><a href={CODEX_RADAR_URL} target="_blank" rel="noreferrer">{row.basis} ↗</a></td>
+                      <th scope="row" data-label="档位">{row.tier}</th>
+                      <td data-label="7d 额度">{row.sevenDayQuota === null ? "—" : formatValue(row.sevenDayQuota, "USD / 7d")}</td>
+                      <td data-label="来源"><a href={CODEX_RADAR_CURRENT_URL} target="_blank" rel="noreferrer">{row.basis} ↗</a></td>
                     </tr>
                   ))}
                 </tbody>
@@ -629,7 +708,7 @@ export default function Dashboard() {
           </div>
           {quota ? <CurveChart title={`${quota.label} 额度变化`} points={quota.points} unit={quota.unit} color="#49c5a1" /> : <div className="empty-state">等待额度趋势数据。</div>}
           <p className="chart-note">仅展示一条可持续读取的 20x Pro 7d 公开曲线。</p>
-          <SourceCaption href={CODEX_RADAR_URL} label="Codex 雷达 codexradar.com" />
+          <SourceCaption href={CODEX_RADAR_CURRENT_URL} label="Codex Radar · current.json" />
         </section>
 
         <section className="chart-section model-section" aria-labelledby="model-title">
@@ -638,9 +717,12 @@ export default function Dashboard() {
               <p className="eyebrow">MODEL CURVES</p>
               <h2 id="model-title">模型 IQ、价格与性价比</h2>
             </div>
-            <span>{formatSourceUpdatedAt(data?.modelUpdatedAt)} 更新</span>
+            <div className="heading-status">
+              <span>{formatSourceUpdatedAt(data?.modelUpdatedAt)} 更新</span>
+              <DataStatus state={modelFreshness} />
+            </div>
           </div>
-          <p className="model-intro">每张卡片是一种公开测量配置；可同时选择多个模型进行对比。价格为单任务平均价格。</p>
+          <p className="model-intro">每张卡片是一种公开测量配置；可同时选择多个模型进行对比。为保持曲线清晰，建议同时选择 2–5 个。价格为单任务平均价格。</p>
           <div className="model-card-grid" aria-label="模型配置选择">
             {modelTrends.map((series) => (
               <ModelCard
@@ -652,10 +734,13 @@ export default function Dashboard() {
             ))}
           </div>
           <div className="model-curve-toolbar">
-            <p>
-              <span aria-hidden="true" style={{ background: selectedModels.length === 1 && model ? modelColor(model.id) : "#5f6f7a" }} />
-              已选模型：<strong>{selectedModels.length ? `${selectedModels.length} 个` : "未选择"}</strong>
-            </p>
+            <div className="model-selection-summary">
+              <p>
+                <span aria-hidden="true" style={{ background: selectedModels.length === 1 && model ? modelColor(model.id) : "#5f6f7a" }} />
+                已选模型：<strong>{selectedModels.length ? `${selectedModels.length} 个` : "未选择"}</strong>
+              </p>
+              <button type="button" onClick={() => setSelectedModelIds([])} disabled={!selectedModels.length}>清空选择</button>
+            </div>
             <label className="model-metric-select">
               <span>切换曲线指标</span>
               <select value={metric} onChange={(event) => setMetric(event.target.value as ModelMetric)}>
@@ -670,21 +755,26 @@ export default function Dashboard() {
               series={modelTrends}
               metric={metric}
               selectedIds={activeSelectedModelIds}
-              onToggle={toggleModel}
             />
           ) : <div className="empty-state">等待模型曲线数据。</div>}
           <p className="chart-note">性价比 = IQ ÷ 单任务平均价格，仅用于同一公开任务集内的相对比较。</p>
-          <SourceCaption href={CODEX_RADAR_URL} label="Codex 雷达 codexradar.com" />
+          <SourceCaption href={CODEX_RADAR_INTELLIGENCE_URL} label="Codex Radar · intelligence-efficiency.json" />
         </section>
 
         <footer>
           <p>公开重置记录、额度和模型数据来自页面标注来源；个人账户的滚动限额请以 Codex 设置页为准。</p>
+          <p className="footer-status" aria-live="polite">
+            页面快照：{formatSourceUpdatedAt(data?.generatedAt)} · 重置 {freshnessLabel(resetFreshness)} · 额度 {freshnessLabel(quotaFreshness)} · 模型 {freshnessLabel(modelFreshness)}
+          </p>
           <div>
-            {data?.sources.filter((source) => source.name !== "Codex Reset Radar").map((source) => (
-              <a href={source.url} target="_blank" rel="noreferrer" key={source.name}>
-                <i className={source.status} />{source.name} ↗
-              </a>
-            ))}
+            {data?.sources.filter((source) => source.name !== "Codex Reset Radar").map((source) => {
+              const state = requestFailureState ?? freshnessState(data, source.dataUpdatedAt ?? data.generatedAt, source.key, freshnessHours(source.key));
+              return (
+                <a href={source.url} target="_blank" rel="noreferrer" key={source.name}>
+                  <i className={sourceIndicatorClass(state)} aria-hidden="true" />{source.name} · {freshnessLabel(state)} ↗
+                </a>
+              );
+            })}
           </div>
         </footer>
       </div>

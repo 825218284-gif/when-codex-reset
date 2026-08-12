@@ -1,0 +1,4 @@
+User-agent: *
+Allow: /
+
+Sitemap: https://825218284-gif.github.io/when-codex-reset/sitemap.xml

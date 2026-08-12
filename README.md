@@ -3,17 +3,15 @@
 面向 ChatGPT Plus 用户的公开信息仪表盘，集中展示：
 
 - 最近四次已确认额度重置时间；
-- 未来 48 小时重置可能性；
 - 公开额度表格和 7 天变化曲线；
 - 各模型的 IQ、价格与性价比趋势。
 
 ## 数据来源
 
 - 重置时间：[Codex Resets](https://codex-resets.com/)
-- 48 小时概率：[Codex Reset Radar](https://codexresetradar.com/)
 - 额度和模型趋势：[Codex Radar](https://codexradar.com/)
 
-这些数据是公开观察与汇总，不代表个人账户的实际余额，也不保证未来一定发生重置。
+这些数据是公开观察与汇总，不代表个人账户的实际余额。页面会标注来源状态和数据更新时间；来源暂时不可用时保留最近一次完整快照，不会用不完整数据覆盖线上结果。
 
 ## GitHub Pages
 
@@ -25,6 +23,8 @@
 
 GitHub Pages 读取 `public/data/briefing.json` 静态快照，因此刷新按钮会读取最近一次自动发布的数据。
 
+公开地址：[https://825218284-gif.github.io/when-codex-reset/](https://825218284-gif.github.io/when-codex-reset/)
+
 ## 本地使用
 
 要求 Node.js 22.13 或更新版本。
@@ -32,6 +32,8 @@ GitHub Pages 读取 `public/data/briefing.json` 静态快照，因此刷新按�
 ```bash
 npm install
 npm run data:refresh
+npm run typecheck
+npm test
 npm run build:pages
 npm run preview:pages
 ```

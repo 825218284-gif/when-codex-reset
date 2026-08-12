@@ -2,6 +2,19 @@ import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
 import test from "node:test";
 
+function pagesBase() {
+  if (process.env.GITHUB_ACTIONS !== "true") return "/";
+  const [owner = "", repository = ""] = (process.env.GITHUB_REPOSITORY ?? "").split("/");
+  if (!repository) return "/";
+  return repository.toLowerCase() === `${owner.toLowerCase()}.github.io`
+    ? "/"
+    : `/${repository}/`;
+}
+
+function escapeRegExp(value) {
+  return value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+}
+
 async function render() {
   const workerUrl = new URL("../dist/server/index.js", import.meta.url);
   workerUrl.searchParams.set("test", `${process.pid}-${Date.now()}`);
@@ -39,18 +52,37 @@ test("server-renders the public dashboard shell", async () => {
 });
 
 test("GitHub Pages build contains the dashboard and a usable data snapshot", async () => {
-  const [html, rawSnapshot] = await Promise.all([
+  const [html, rawSnapshot, robots, sitemap, shareImage] = await Promise.all([
     readFile(new URL("../pages-dist/index.html", import.meta.url), "utf8"),
     readFile(new URL("../pages-dist/data/briefing.json", import.meta.url), "utf8"),
+    readFile(new URL("../pages-dist/robots.txt", import.meta.url), "utf8"),
+    readFile(new URL("../pages-dist/sitemap.xml", import.meta.url), "utf8"),
+    readFile(new URL("../pages-dist/og-midnight-fantasy.jpg", import.meta.url)),
   ]);
   const snapshot = JSON.parse(rawSnapshot);
+  const base = pagesBase();
 
   assert.match(html, /<title>Codex 额度重置雷达<\/title>/i);
-  assert.match(html, /data-briefing-url="\/data\/briefing\.json"/);
-  assert.match(html, /\/assets\/index-[^"']+\.js/);
-  assert.ok(Array.isArray(snapshot.sources) && snapshot.sources.length === 3);
-  assert.ok(Array.isArray(snapshot.history) && snapshot.history.length > 0);
+  assert.match(
+    html,
+    new RegExp(`data-briefing-url="${escapeRegExp(base)}data/briefing\\.json"`),
+  );
+  assert.match(html, new RegExp(`${escapeRegExp(base)}assets/index-[^"']+\\.js`));
+  assert.match(html, /rel="canonical" href="https:\/\/825218284-gif\.github\.io\/when-codex-reset\/"/);
+  assert.match(html, /property="og:image"\s+content="https:\/\/825218284-gif\.github\.io\/when-codex-reset\/og-midnight-fantasy\.jpg"/);
+  assert.match(robots, /Sitemap: https:\/\/825218284-gif\.github\.io\/when-codex-reset\/sitemap\.xml/);
+  assert.match(sitemap, /<loc>https:\/\/825218284-gif\.github\.io\/when-codex-reset\/<\/loc>/);
+  assert.ok(shareImage.byteLength > 100_000 && shareImage.byteLength < 1_000_000);
+
+  assert.ok(Number.isFinite(Date.parse(snapshot.generatedAt)), "snapshot generatedAt must be valid");
+  assert.ok(Array.isArray(snapshot.sources) && snapshot.sources.length >= 2);
+  assert.ok(snapshot.sources.every((source) => /^https:\/\//.test(source.url)));
+  assert.equal(snapshot.sources.find((source) => source.key === "quota")?.url, "https://codexradar.com/current.json");
+  assert.equal(snapshot.sources.find((source) => source.key === "model")?.url, "https://codexradar.com/data/intelligence-efficiency.json");
+  assert.ok(snapshot.sources.every((source) => typeof source.stale === "boolean"));
+  assert.ok(Array.isArray(snapshot.history) && snapshot.history.length === 4);
   assert.ok(Array.isArray(snapshot.quotaSnapshot) && snapshot.quotaSnapshot.length > 0);
+  assert.ok(Array.isArray(snapshot.quotaTrends) && snapshot.quotaTrends.length > 0);
   assert.equal(snapshot.modelTrends.length, 19);
   assert.deepEqual(
     snapshot.modelTrends.map((series) => series.id),
