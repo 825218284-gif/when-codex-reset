@@ -37,8 +37,6 @@ main .model-section { background-size: 100% 100%; background-repeat: no-repeat; 
 .source-caption,
 .chart-note,
 .model-intro,
-.model-curve-detail,
-.model-curve-figure figcaption p,
 footer,
 footer small { font-size: 11px; }
 

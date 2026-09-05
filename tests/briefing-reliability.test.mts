@@ -52,8 +52,9 @@ function briefing(at: string): ResetBriefing {
   };
 }
 
-test("recognizes only the exact complete 19-model intelligence set", () => {
+test("recognizes only the exact complete 20-model intelligence set", () => {
   const complete = models("2026-08-12T00:00:00Z");
+  assert.equal(expectedModelIds.length, 20);
   assert.equal(hasCompleteModelSet(complete), true);
   assert.equal(hasCompleteModelSet(complete.slice(0, 12)), false);
   assert.equal(hasCompleteModelSet([...complete, complete[0]]), false);

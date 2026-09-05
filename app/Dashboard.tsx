@@ -3,14 +3,6 @@
 import { useEffect, useMemo, useState, type CSSProperties } from "react";
 import type { ModelTrendPoint, ModelTrendSeries, ResetBriefing, TrendPoint } from "./lib/briefing";
 
-type ModelMetric = "score" | "cost" | "value";
-
-const metricMeta: Record<ModelMetric, { label: string; unit: string }> = {
-  score: { label: "IQ", unit: "IQ" },
-  cost: { label: "价格", unit: "USD / 任务" },
-  value: { label: "性价比", unit: "IQ / USD" },
-};
-
 const CODEX_RESETS_URL = "https://codex-resets.com/";
 const CODEX_RADAR_CURRENT_URL = "https://codexradar.com/current.json";
 const CODEX_RADAR_INTELLIGENCE_URL = "https://codexradar.com/data/intelligence-efficiency.json";
@@ -88,35 +80,21 @@ function briefingUrl() {
 }
 
 function modelColor(id: string) {
+  if (id.startsWith("gpt_6_astra_ultra") || id.startsWith("gpt_6_astra_max") || id.startsWith("gpt_6_astra_xhigh")) return "#35d6ee";
+  if (id.startsWith("gpt_6_astra_")) return "#0e93a8";
   if (id.includes("_sol_ultra") || id.includes("_sol_max") || id.includes("_sol_xhigh")) return "#f5c518";
   if (id.includes("_sol_high")) return "#e98500";
   if (id.includes("_sol_medium")) return "#a64b16";
   if (id.includes("_sol_low")) return "#804016";
-  if (id.includes("_terra_ultra") || id.includes("_terra_max")) return "#5b9df1";
-  if (id.includes("_terra_high") || id.includes("_terra_medium") || id.includes("_terra_low")) return "#2d67e7";
   if (id.includes("_luna_max") || id.includes("_luna_xhigh")) return "#ff6f8a";
   if (id.includes("_luna_high") || id.includes("_luna_medium") || id.includes("_luna_low")) return "#e61f4d";
-  if (id.includes("gpt_55")) return "#21c66a";
+  if (id.startsWith("glm_5_3_flash_max")) return "#b39cff";
+  if (id.startsWith("glm_5_3_flash_")) return "#7f57e0";
   return "#806ef2";
 }
 
-function modelContrastColor(id: string) {
-  if (id.includes("_sol_medium") || id.includes("_sol_low")) return "#ffffff";
-  if (id.includes("_terra_high") || id.includes("_terra_medium") || id.includes("_terra_low")) return "#ffffff";
-  if (id.includes("_luna_high") || id.includes("_luna_medium") || id.includes("_luna_low")) return "#ffffff";
-  return "#10152f";
-}
-
-function modelDash(id: string) {
-  if (id.endsWith("_max")) return undefined;
-  if (id.includes("xhigh")) return "11 5";
-  if (id.includes("_high")) return "5 5";
-  if (id.includes("_medium")) return "12 4 2 4";
-  return "2 6";
-}
-
 function shortModelLabel(label: string) {
-  return label.replace(/^GPT-5\.6\s+/i, "");
+  return label.replace(/^(?:GPT-(?:5\.6|6)|GLM 5\.3)\s+/i, "");
 }
 
 function latestModelPoint(series: ModelTrendSeries): ModelTrendPoint | null {
@@ -297,33 +275,19 @@ function CurveChart({
   );
 }
 
-function ModelCard({
-  series,
-  selected,
-  onSelect,
-}: {
-  series: ModelTrendSeries;
-  selected: boolean;
-  onSelect: () => void;
-}) {
+function ModelCard({ series }: { series: ModelTrendSeries }) {
   const latest = latestModelPoint(series);
   const color = modelColor(series.id);
   const label = shortModelLabel(series.label);
   const score = latest?.score === null || latest?.score === undefined ? "—" : formatValue(latest.score, "IQ");
   const price = formatCardCost(latest?.cost ?? null);
   const duration = latest?.duration ?? "时间待来源补全";
+  const value = latest?.value === null || latest?.value === undefined
+    ? "—"
+    : `${formatValue(latest.value, "IQ / USD")} IQ/$`;
 
   return (
-    <button
-      className={selected ? "model-card is-selected" : "model-card"}
-      type="button"
-      onClick={onSelect}
-      aria-pressed={selected}
-      style={{
-        "--model-color": color,
-        "--model-contrast": modelContrastColor(series.id),
-      } as CSSProperties}
-    >
+    <article className="model-card" style={{ "--model-color": color } as CSSProperties}>
       <span className="model-card-main">
         <span className="model-card-label">{label}</span>
         <strong className="model-card-score">{score}</strong>
@@ -331,191 +295,9 @@ function ModelCard({
       <span className="model-card-meta">
         <b>{price}</b>
         <small>{duration}</small>
+        <small>{value}</small>
       </span>
-    </button>
-  );
-}
-
-type HoveredModelPoint = {
-  label: string;
-  at: string;
-  value: number;
-  color: string;
-  left: number;
-  top: number;
-};
-
-function ModelComparisonChart({
-  series,
-  metric,
-  selectedIds,
-}: {
-  series: ModelTrendSeries[];
-  metric: ModelMetric;
-  selectedIds: string[];
-}) {
-  const [hovered, setHovered] = useState<HoveredModelPoint | null>(null);
-  const width = 820;
-  const height = 286;
-  const left = 54;
-  const right = 24;
-  const top = 18;
-  const bottom = 38;
-  const plotWidth = width - left - right;
-  const plotHeight = height - top - bottom;
-  const dates = [...new Set(series.flatMap((item) => item.points.map((point) => point.at)))].sort((a, b) => a.localeCompare(b));
-  const values = series.flatMap((item) => item.points.map((point) => point[metric]).filter((value): value is number => value !== null));
-  const baseMin = values.length ? Math.min(...values) : 0;
-  const baseMax = values.length ? Math.max(...values) : 1;
-  const spread = Math.max(baseMax - baseMin, Math.abs(baseMax) * 0.08, 1);
-  const min = baseMin - spread * 0.13;
-  const max = baseMax + spread * 0.13;
-  const x = (index: number) =>
-    dates.length <= 1 ? left + plotWidth / 2 : left + (index / (dates.length - 1)) * plotWidth;
-  const y = (value: number) => top + ((max - value) / (max - min)) * plotHeight;
-  const yTicks = [0, 1, 2, 3].map((index) => max - ((max - min) * index) / 3);
-  const xIndexes = [...new Set(Array.from({ length: Math.min(dates.length, 5) }, (_, index) =>
-    Math.round((index * Math.max(dates.length - 1, 0)) / Math.max(Math.min(dates.length, 5) - 1, 1)),
-  ))];
-  const selectedSeries = series.filter((item) => selectedIds.includes(item.id));
-  const primarySelectedSeries = selectedSeries[0];
-  const selectedLatest = primarySelectedSeries ? latestModelPoint(primarySelectedSeries) : null;
-  const selectedValue = selectedLatest?.[metric] ?? null;
-  const selectedLabel = primarySelectedSeries ? shortModelLabel(primarySelectedSeries.label) : "未选择模型";
-  const selectedSummary = selectedSeries.length > 1
-    ? `已选 ${selectedSeries.length} 个模型`
-    : selectedSeries.length === 1
-      ? selectedLabel
-      : "未选择任何模型";
-  const meta = metricMeta[metric];
-  const pathFor = (item: ModelTrendSeries) => {
-    const points = new Map(item.points.map((point) => [point.at, point[metric]]));
-    return dates.reduce(
-      (accumulator, at, index) => {
-        const value = points.get(at);
-        if (value === null || value === undefined) return { value: accumulator.value, gap: true };
-        const command = accumulator.gap ? "M" : "L";
-        return {
-          value: `${accumulator.value}${command}${x(index).toFixed(2)},${y(value).toFixed(2)} `,
-          gap: false,
-        };
-      },
-      { value: "", gap: true },
-    ).value;
-  };
-
-  return (
-    <figure className="model-curve-figure">
-      <figcaption>
-        <div>
-          <span>{meta.label} 曲线</span>
-          <strong>{selectedSeries.length > 1 ? `${selectedSeries.length} 个模型` : selectedValue === null ? "—" : formatValue(selectedValue, meta.unit)}</strong>
-          <small>
-            {selectedSeries.length > 1
-              ? "多模型同时对比"
-              : selectedSeries.length === 1
-                ? `${selectedLabel} · ${selectedLatest ? formatChartDate(selectedLatest.at) : "等待公开数据"}`
-                : "点击卡片开始对比"}
-          </small>
-        </div>
-        <p>点选上方卡片可增减对比模型</p>
-      </figcaption>
-      <div className="model-curve-canvas" onPointerLeave={() => setHovered(null)}>
-        <svg viewBox={`0 0 ${width} ${height}`} role="img" aria-label={`${meta.label} 多模型对比曲线`}>
-          <title>{meta.label} 多模型对比</title>
-          <desc>展示 {series.length} 个公开模型配置的 {meta.label} 时间变化。当前选中 {selectedSummary}。</desc>
-          {yTicks.map((tick) => (
-            <g key={tick}>
-              <line className="model-curve-grid" x1={left} x2={width - right} y1={y(tick)} y2={y(tick)} />
-              <text className="model-curve-y-label" x={left - 9} y={y(tick) + 4} textAnchor="end">
-                {formatValue(tick, meta.unit)}
-              </text>
-            </g>
-          ))}
-          <line className="model-curve-axis" x1={left} x2={width - right} y1={top + plotHeight} y2={top + plotHeight} />
-          {xIndexes.map((index) => (
-            <text
-              className={
-                index === xIndexes[0] || index === xIndexes.at(-1) || index === xIndexes[Math.floor(xIndexes.length / 2)]
-                  ? "model-curve-x-label"
-                  : "model-curve-x-label is-optional"
-              }
-              key={dates[index]}
-              x={x(index)}
-              y={height - 13}
-              textAnchor="middle"
-            >
-              {formatChartDate(dates[index])}
-            </text>
-          ))}
-          {series.map((item) => {
-            const selected = selectedIds.includes(item.id);
-            const color = modelColor(item.id);
-            const renderColor = selected ? color : "#8c989f";
-            const path = pathFor(item);
-            const dash = modelDash(item.id);
-            return (
-              <g
-                className={selected
-                  ? "model-curve-series is-selected"
-                  : selectedIds.length
-                    ? "model-curve-series"
-                    : "model-curve-series is-idle"}
-                key={item.id}
-              >
-                {path ? (
-                  <path
-                    className="model-curve-line"
-                    d={path}
-                    stroke={renderColor}
-                    strokeDasharray={dash}
-                  />
-                ) : null}
-                {item.points.map((point) => {
-                  const value = point[metric];
-                  const index = dates.indexOf(point.at);
-                  if (value === null || index < 0) return null;
-                  const pointX = x(index);
-                  const pointY = y(value);
-                  return (
-                    <circle
-                      className="model-curve-dot"
-                      cx={pointX}
-                      cy={pointY}
-                      fill={renderColor}
-                      r={selected ? 4.3 : 3.1}
-                      key={`${item.id}-${point.at}`}
-                      onPointerEnter={() => setHovered({
-                        label: shortModelLabel(item.label),
-                        at: point.at,
-                        value,
-                        color: renderColor,
-                        left: Math.min(86, Math.max(14, (pointX / width) * 100)),
-                        top: Math.min(78, Math.max(12, (pointY / height) * 100)),
-                      })}
-                    />
-                  );
-                })}
-              </g>
-            );
-          })}
-        </svg>
-        {hovered ? (
-          <div className="model-curve-tooltip" style={{ left: `${hovered.left}%`, top: `${hovered.top}%` }} role="status">
-            <i style={{ background: hovered.color }} aria-hidden="true" />
-            <strong>{hovered.label}</strong>
-            <span>{formatChartDate(hovered.at)} · {formatValue(hovered.value, meta.unit)}</span>
-          </div>
-        ) : null}
-      </div>
-      <p className="model-curve-detail" aria-live="polite">
-        {hovered
-          ? `${hovered.label} · ${formatChartDate(hovered.at)} · ${formatValue(hovered.value, meta.unit)}`
-          : selectedSeries.length
-            ? `已选 ${selectedSeries.length} 个模型；点击上方卡片可增减对比。`
-            : "暂未选择模型；点击任意模型卡片开始对比。"}
-      </p>
-    </figure>
+    </article>
   );
 }
 
@@ -523,8 +305,6 @@ export default function Dashboard() {
   const [data, setData] = useState<ResetBriefing | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
-  const [selectedModelIds, setSelectedModelIds] = useState<string[]>(["gpt_56_sol_max"]);
-  const [metric, setMetric] = useState<ModelMetric>("score");
 
   async function refresh() {
     setLoading(true);
@@ -548,22 +328,11 @@ export default function Dashboard() {
 
   const quota = data?.quotaTrends.find((series) => series.id === "pro20-7d") ?? data?.quotaTrends[0];
   const modelTrends = data?.modelTrends ?? [];
-  const knownSelectedModelIds = selectedModelIds.filter((id) => modelTrends.some((series) => series.id === id));
-  const activeSelectedModelIds = knownSelectedModelIds;
-  const selectedModels = modelTrends.filter((series) => activeSelectedModelIds.includes(series.id));
-  const model = selectedModels[0] ?? null;
   const latestResetTime = formatBeijing(data?.latestConfirmed?.occurredAt);
   const requestFailureState: FreshnessState | null = error ? (data ? "cached" : "unavailable") : null;
   const resetFreshness = requestFailureState ?? freshnessState(data, data?.generatedAt, "reset", 3);
   const quotaFreshness = requestFailureState ?? freshnessState(data, data?.quotaUpdatedAt, "quota", 24);
   const modelFreshness = requestFailureState ?? freshnessState(data, data?.modelUpdatedAt, "model", 6);
-  const toggleModel = (id: string) => {
-    setSelectedModelIds((current) => {
-      const visible = current.filter((candidate) => modelTrends.some((series) => series.id === candidate));
-      if (visible.includes(id)) return visible.filter((candidate) => candidate !== id);
-      return [...visible, id];
-    });
-  };
   const quotaSummary = useMemo(() => {
     if (!quota) return null;
     const valid = quota.points.filter(
@@ -714,7 +483,7 @@ export default function Dashboard() {
         <section className="chart-section model-section" aria-labelledby="model-title">
           <div className="section-heading chart-heading">
             <div>
-              <p className="eyebrow">MODEL CURVES</p>
+              <p className="eyebrow">MODEL INTELLIGENCE</p>
               <h2 id="model-title">模型 IQ、价格与性价比</h2>
             </div>
             <div className="heading-status">
@@ -722,41 +491,14 @@ export default function Dashboard() {
               <DataStatus state={modelFreshness} />
             </div>
           </div>
-          <p className="model-intro">每张卡片是一种公开测量配置；可同时选择多个模型进行对比。为保持曲线清晰，建议同时选择 2–5 个。价格为单任务平均价格。</p>
-          <div className="model-card-grid" aria-label="模型配置选择">
-            {modelTrends.map((series) => (
-              <ModelCard
-                key={series.id}
-                series={series}
-                selected={activeSelectedModelIds.includes(series.id)}
-                onSelect={() => toggleModel(series.id)}
-              />
-            ))}
-          </div>
-          <div className="model-curve-toolbar">
-            <div className="model-selection-summary">
-              <p>
-                <span aria-hidden="true" style={{ background: selectedModels.length === 1 && model ? modelColor(model.id) : "#5f6f7a" }} />
-                已选模型：<strong>{selectedModels.length ? `${selectedModels.length} 个` : "未选择"}</strong>
-              </p>
-              <button type="button" onClick={() => setSelectedModelIds([])} disabled={!selectedModels.length}>清空选择</button>
-            </div>
-            <label className="model-metric-select">
-              <span>切换曲线指标</span>
-              <select value={metric} onChange={(event) => setMetric(event.target.value as ModelMetric)}>
-                {(Object.keys(metricMeta) as ModelMetric[]).map((key) => (
-                  <option key={key} value={key}>{metricMeta[key].label} 曲线</option>
-                ))}
-              </select>
-            </label>
-          </div>
+          <p className="model-intro">每张卡片是一种公开测量配置，展示其 IQ、单任务平均价格、平均耗时和性价比。</p>
           {modelTrends.length ? (
-            <ModelComparisonChart
-              series={modelTrends}
-              metric={metric}
-              selectedIds={activeSelectedModelIds}
-            />
-          ) : <div className="empty-state">等待模型曲线数据。</div>}
+            <div className="model-card-grid" aria-label="模型配置">
+              {modelTrends.map((series) => (
+                <ModelCard key={series.id} series={series} />
+              ))}
+            </div>
+          ) : <div className="empty-state">等待模型数据。</div>}
           <p className="chart-note">性价比 = IQ ÷ 单任务平均价格，仅用于同一公开任务集内的相对比较。</p>
           <SourceCaption href={CODEX_RADAR_INTELLIGENCE_URL} label="Codex Radar · intelligence-efficiency.json" />
         </section>

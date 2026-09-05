@@ -141,25 +141,26 @@ export function parseCodexResets(html: string) {
 }
 
 const intelligenceConfigurations = [
+  { id: "gpt_6_astra_ultra", model: "gpt-6-astra", effort: "ultra", label: "GPT-6 Astra ultra" },
+  { id: "gpt_6_astra_max", model: "gpt-6-astra", effort: "max", label: "GPT-6 Astra max" },
+  { id: "gpt_6_astra_xhigh", model: "gpt-6-astra", effort: "xhigh", label: "GPT-6 Astra xhigh" },
+  { id: "gpt_6_astra_high", model: "gpt-6-astra", effort: "high", label: "GPT-6 Astra high" },
+  { id: "gpt_6_astra_medium", model: "gpt-6-astra", effort: "medium", label: "GPT-6 Astra medium" },
+  { id: "gpt_6_astra_low", model: "gpt-6-astra", effort: "low", label: "GPT-6 Astra low" },
   { id: "gpt_56_sol_ultra", model: "gpt-5.6-sol", effort: "ultra", label: "GPT-5.6 Sol ultra" },
   { id: "gpt_56_sol_max", model: "gpt-5.6-sol", effort: "max", label: "GPT-5.6 Sol max" },
   { id: "gpt_56_sol_xhigh", model: "gpt-5.6-sol", effort: "xhigh", label: "GPT-5.6 Sol xhigh" },
   { id: "gpt_56_sol_high", model: "gpt-5.6-sol", effort: "high", label: "GPT-5.6 Sol high" },
   { id: "gpt_56_sol_medium", model: "gpt-5.6-sol", effort: "medium", label: "GPT-5.6 Sol medium" },
   { id: "gpt_56_sol_low", model: "gpt-5.6-sol", effort: "low", label: "GPT-5.6 Sol low" },
-  { id: "gpt_56_terra_ultra", model: "gpt-5.6-terra", effort: "ultra", label: "GPT-5.6 Terra ultra" },
-  { id: "gpt_56_terra_max", model: "gpt-5.6-terra", effort: "max", label: "GPT-5.6 Terra max" },
-  { id: "gpt_56_terra_xhigh", model: "gpt-5.6-terra", effort: "xhigh", label: "GPT-5.6 Terra xhigh" },
-  { id: "gpt_56_terra_high", model: "gpt-5.6-terra", effort: "high", label: "GPT-5.6 Terra high" },
-  { id: "gpt_56_terra_medium", model: "gpt-5.6-terra", effort: "medium", label: "GPT-5.6 Terra medium" },
-  { id: "gpt_56_terra_low", model: "gpt-5.6-terra", effort: "low", label: "GPT-5.6 Terra low" },
   { id: "gpt_56_luna_max", model: "gpt-5.6-luna", effort: "max", label: "GPT-5.6 Luna max" },
   { id: "gpt_56_luna_xhigh", model: "gpt-5.6-luna", effort: "xhigh", label: "GPT-5.6 Luna xhigh" },
   { id: "gpt_56_luna_high", model: "gpt-5.6-luna", effort: "high", label: "GPT-5.6 Luna high" },
   { id: "gpt_56_luna_medium", model: "gpt-5.6-luna", effort: "medium", label: "GPT-5.6 Luna medium" },
   { id: "gpt_56_luna_low", model: "gpt-5.6-luna", effort: "low", label: "GPT-5.6 Luna low" },
-  { id: "gpt_55_xhigh", model: "gpt-5.5", effort: "xhigh", label: "GPT-5.5 xhigh" },
-  { id: "gpt_55_high", model: "gpt-5.5", effort: "high", label: "GPT-5.5 high" },
+  { id: "glm_5_3_flash_max", model: "glm-5.3-flash", effort: "max", label: "GLM 5.3 Flash max" },
+  { id: "glm_5_3_flash_high", model: "glm-5.3-flash", effort: "high", label: "GLM 5.3 Flash high" },
+  { id: "glm_5_3_flash_low", model: "glm-5.3-flash", effort: "low", label: "GLM 5.3 Flash low" },
 ] as const;
 
 function intelligencePoint(raw: UnknownRecord, at: string): ModelTrendPoint | null {
@@ -366,9 +367,9 @@ export async function GET() {
         fallback: false,
         stale: !completeIntelligence || dataIsOlderThan(modelUpdatedAt, 6 * 60 * 60 * 1000),
         detail: completeIntelligence
-          ? "完整 19 个模型已成功读取。"
+          ? `完整 ${intelligenceConfigurations.length} 个模型已成功读取。`
           : intelligenceResult.status === "fulfilled"
-            ? `模型数据不完整（${intelligenceModels.length}/19），不会覆盖完整快照。`
+            ? `模型数据不完整（${intelligenceModels.length}/${intelligenceConfigurations.length}），不会覆盖完整快照。`
             : failureDetail(intelligenceResult, "模型数据不可用。"),
       },
     ],

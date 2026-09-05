@@ -81,25 +81,26 @@ export interface ResetBriefing {
 }
 
 export const expectedModelIds = [
+  "gpt_6_astra_ultra",
+  "gpt_6_astra_max",
+  "gpt_6_astra_xhigh",
+  "gpt_6_astra_high",
+  "gpt_6_astra_medium",
+  "gpt_6_astra_low",
   "gpt_56_sol_ultra",
   "gpt_56_sol_max",
   "gpt_56_sol_xhigh",
   "gpt_56_sol_high",
   "gpt_56_sol_medium",
   "gpt_56_sol_low",
-  "gpt_56_terra_ultra",
-  "gpt_56_terra_max",
-  "gpt_56_terra_xhigh",
-  "gpt_56_terra_high",
-  "gpt_56_terra_medium",
-  "gpt_56_terra_low",
   "gpt_56_luna_max",
   "gpt_56_luna_xhigh",
   "gpt_56_luna_high",
   "gpt_56_luna_medium",
   "gpt_56_luna_low",
-  "gpt_55_xhigh",
-  "gpt_55_high",
+  "glm_5_3_flash_max",
+  "glm_5_3_flash_high",
+  "glm_5_3_flash_low",
 ] as const;
 
 export const expectedQuotaTiers = ["20x Pro", "5x Pro", "Plus"] as const;
@@ -112,6 +113,11 @@ const sourceFreshnessWindowMs: Record<BriefingSourceKey, number> = {
   model: 6 * 60 * 60 * 1000,
 };
 
+/**
+ * Only the exact configured 20-model set (GPT-6 Astra, GPT-5.6 Sol, GPT-5.6
+ * Luna, GLM 5.3 Flash and their reasoning efforts) may replace the published
+ * model feed; anything partial keeps the previous complete snapshot.
+ */
 export function hasCompleteModelSet(series: ModelTrendSeries[]): boolean {
   const ids = new Set(series.map((item) => item.id));
   return series.length === expectedModelIds.length
@@ -274,7 +280,7 @@ export function mergeBriefingSnapshots(
         : fallbackSource("quota", next, previous, hasQuotaData(previous), "额度源不可用或数据时间倒退，沿用上次成功数据。"),
       modelAccepted
         ? liveSource("model", next)
-        : fallbackSource("model", next, previous, hasCompleteModelSet(previous.modelTrends), "模型源不可用、数据时间倒退或未返回完整 19 个模型，沿用上次完整数据。"),
+        : fallbackSource("model", next, previous, hasCompleteModelSet(previous.modelTrends), `模型源不可用、数据时间倒退或未返回完整 ${expectedModelIds.length} 个模型，沿用上次完整数据。`),
     ],
     verdict: resetAccepted ? next.verdict : previous.verdict,
     verdictDetail: resetAccepted ? next.verdictDetail : previous.verdictDetail,
