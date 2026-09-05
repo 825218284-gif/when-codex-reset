@@ -89,6 +89,8 @@ function modelColor(id: string) {
   if (id.includes("_luna_high") || id.includes("_luna_medium") || id.includes("_luna_low")) return "#e61f4d";
   if (id.startsWith("glm_5_3_flash_max")) return "#b39cff";
   if (id.startsWith("glm_5_3_flash_")) return "#7f57e0";
+  if (id.startsWith("dsh_deepseek_v4_flash_max")) return "#9fc4b4";
+  if (id.startsWith("dsh_deepseek_v4_flash_")) return "#5f8f79";
   return "#806ef2";
 }
 
@@ -291,6 +293,9 @@ export default function Dashboard() {
                     <div className="timeline-node" aria-hidden="true"><span /></div>
                     <time aria-label={`额度重置：${event.date}`}>
                       <strong>{resetTime.day}</strong>
+                      {event.kind ? (
+                        <small className={`timeline-kind is-${event.kind}`}>{event.kind === "banked" ? "重置卡" : "硬重置"}</small>
+                      ) : null}
                       {index === 0 && resetTime.minute ? <small>{resetTime.minute}</small> : null}
                     </time>
                   </li>

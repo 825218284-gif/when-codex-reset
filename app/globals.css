@@ -46,7 +46,7 @@ main::before {
 .halo { position: absolute; z-index: -1; border-radius: 50%; pointer-events: none; filter: none; opacity: .26; }
 .halo-top { top: -21rem; right: -14rem; width: 48rem; height: 48rem; background: var(--yellow); }
 .halo-bottom { bottom: -19rem; left: -17rem; width: 42rem; height: 42rem; background: var(--pink); }
-.shell { width: min(1360px, calc(100% - 48px)); margin: 0 auto; padding: 10px 0 36px; }
+.shell { width: min(1600px, calc(100% - 48px)); margin: 0 auto; padding: 10px 0 36px; }
 
 .topbar { display: flex; align-items: center; justify-content: space-between; gap: 18px; min-height: 82px; padding: 7px 4px 18px; }
 .brand { display: inline-flex; align-items: center; gap: 13px; color: var(--ink); font-size: clamp(18px, 2.25vw, 25px); font-weight: 900; letter-spacing: -.055em; text-decoration: none; }
@@ -81,7 +81,7 @@ main::before {
 .latest-card { position: relative; }
 .signal-label { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
 .latest-card p { font-size: 12px; }
-.latest-reset-time { display: flex; flex-wrap: wrap; align-items: baseline; gap: 18px; width: fit-content; max-width: 100%; margin-top: 16px; padding: 11px 23px 15px; border: 3px solid var(--line); border-radius: 21px 25px 19px 23px; color: var(--ink); background: var(--yellow); box-shadow: 5px 6px 0 var(--shadow); font-size: clamp(42px, 5.5vw, 73px); font-variant-numeric: tabular-nums; font-weight: 950; letter-spacing: -.085em; line-height: .88; transform: rotate(-1.2deg); }
+.latest-reset-time { display: flex; flex-wrap: wrap; align-items: baseline; justify-content: center; gap: 18px; width: fit-content; max-width: 100%; margin: 16px auto 0; padding: 11px 23px 15px; border: 3px solid var(--line); border-radius: 21px 25px 19px 23px; color: var(--ink); background: var(--yellow); box-shadow: 5px 6px 0 var(--shadow); font-size: clamp(42px, 5.5vw, 73px); font-variant-numeric: tabular-nums; font-weight: 950; letter-spacing: -.085em; line-height: .88; transform: rotate(-1.2deg); }
 .latest-card .latest-timezone { display: block; margin-top: 17px; color: var(--muted); font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace; font-size: 12px; font-weight: 750; letter-spacing: .03em; }
 .latest-card a { display: inline-block; margin-top: 11px; color: var(--mint-deep); font-size: 12px; font-weight: 900; text-decoration: underline; text-decoration-thickness: 2px; text-underline-offset: 3px; }
 .latest-card a:hover { color: var(--ink); }
@@ -127,6 +127,8 @@ main::before {
 .timeline time { display: grid; gap: 3px; color: var(--ink); font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace; font-weight: 750; line-height: 1.2; }
 .timeline time strong { font-size: 16px; font-weight: 900; letter-spacing: -.05em; }
 .timeline time small { color: #5b4b41; font-size: 11px; font-weight: 900; }
+.timeline time small.timeline-kind { display: inline-flex; align-items: center; min-height: 19px; padding: 2px 9px; border: 1.5px solid rgba(131, 163, 255, .55); border-radius: 999px; color: var(--muted); font-size: 10px; font-weight: 900; letter-spacing: .04em; }
+.timeline time small.timeline-kind.is-banked { color: #10152f; border-color: #f8e98d; background: var(--yellow); }
 .timeline-loading { display: grid; gap: 11px; padding-top: 22px; }
 .timeline-loading i { display: block; height: 89px; border: 3px solid var(--line); border-radius: 15px; background: repeating-linear-gradient(-45deg, var(--yellow) 0 13px, #fffbd0 13px 26px); background-size: 200% 100%; animation: pulse 1.2s linear infinite; }
 @keyframes pulse { to { background-position: -200% 0; } }

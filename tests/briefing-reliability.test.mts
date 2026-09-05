@@ -134,6 +134,8 @@ test("older source timestamps are rejected independently", () => {
 
 test("reset parsing sorts events and keeps each title paired with its own time", () => {
   const parsed = parseCodexResets(`
+    <a class="cg-cell" data-level="1" data-reset-type="regular" data-date="2026-08-10" data-count="1"></a>
+    <a class="cg-cell" data-level="1" data-reset-type="banked" data-date="2026-08-12" data-count="1"></a>
     <li class="log-item">
       <time data-datetime="2026-08-10T01:00:00.000Z"></time>
       <a class="log-item-link" href="https://x.com/example/status/older"></a>
@@ -148,6 +150,8 @@ test("reset parsing sorts events and keeps each title paired with its own time",
 
   assert.equal(parsed.history[0].title, "newer title");
   assert.equal(parsed.history[0].date, "2026.08.12 10:30");
+  assert.equal(parsed.history[0].kind, "banked");
+  assert.equal(parsed.history[1].kind, "regular");
   assert.equal(parsed.latestConfirmed?.title, "newer title");
   assert.equal(parsed.latestConfirmed?.occurredAt, "2026-08-12T02:30:00.000Z");
   assert.equal(parsed.latestConfirmed?.sourceUrl, "https://codex-resets.com/");

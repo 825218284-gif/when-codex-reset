@@ -28,6 +28,8 @@ export interface HardResetEvent {
   date: string;
   title: string;
   sourceUrl: string;
+  /** Reset classification taken from the source's own calendar data. */
+  kind?: "banked" | "regular";
 }
 
 export interface TrendPoint {
@@ -96,11 +98,11 @@ export const expectedModelIds = [
   "gpt_56_luna_max",
   "gpt_56_luna_xhigh",
   "gpt_56_luna_high",
-  "gpt_56_luna_medium",
-  "gpt_56_luna_low",
   "glm_5_3_flash_max",
   "glm_5_3_flash_high",
   "glm_5_3_flash_low",
+  "dsh_deepseek_v4_flash_max",
+  "dsh_deepseek_v4_flash_high",
 ] as const;
 
 export const expectedQuotaTiers = ["20x Pro", "5x Pro", "Plus"] as const;

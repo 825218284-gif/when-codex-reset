@@ -95,6 +95,14 @@ function resetTitle(text: string) {
 }
 
 export function parseCodexResets(html: string) {
+  const resetKinds = new Map<string, "banked" | "regular">();
+  for (const [, kind, day] of html.matchAll(/data-reset-type=["'](banked|regular)["'][^>]*?data-date=["'](\d{4}-\d{2}-\d{2})["']/gi)) {
+    resetKinds.set(day, kind as "banked" | "regular");
+  }
+  for (const [, day, kind] of html.matchAll(/data-date=["'](\d{4}-\d{2}-\d{2})["'][^>]*?data-reset-type=["'](banked|regular)["']/gi)) {
+    if (!resetKinds.has(day)) resetKinds.set(day, kind as "banked" | "regular");
+  }
+
   const parsedHistory: Array<HardResetEvent & { occurredAt: string }> = [];
   const items = html.matchAll(/<li\b[^>]*class=["'][^"']*\blog-item\b[^"']*["'][^>]*>([\s\S]*?)<\/li>/gi);
 
@@ -112,6 +120,7 @@ export function parseCodexResets(html: string) {
       date: formatResetTimelineTime(occurredAt),
       title: resetTitle(text),
       sourceUrl,
+      kind: resetKinds.get(occurredAt.slice(0, 10)),
       occurredAt,
     });
   }
@@ -122,6 +131,7 @@ export function parseCodexResets(html: string) {
     date: event.date,
     title: event.title,
     sourceUrl: event.sourceUrl,
+    kind: event.kind,
   }));
 
   const generatedNode = html.match(/<[^>]*data-role=["']generated-at["'][^>]*>/i)?.[0] ?? "";
@@ -156,11 +166,11 @@ const intelligenceConfigurations = [
   { id: "gpt_56_luna_max", model: "gpt-5.6-luna", effort: "max", label: "GPT-5.6 Luna max" },
   { id: "gpt_56_luna_xhigh", model: "gpt-5.6-luna", effort: "xhigh", label: "GPT-5.6 Luna xhigh" },
   { id: "gpt_56_luna_high", model: "gpt-5.6-luna", effort: "high", label: "GPT-5.6 Luna high" },
-  { id: "gpt_56_luna_medium", model: "gpt-5.6-luna", effort: "medium", label: "GPT-5.6 Luna medium" },
-  { id: "gpt_56_luna_low", model: "gpt-5.6-luna", effort: "low", label: "GPT-5.6 Luna low" },
   { id: "glm_5_3_flash_max", model: "glm-5.3-flash", effort: "max", label: "GLM 5.3 Flash max" },
   { id: "glm_5_3_flash_high", model: "glm-5.3-flash", effort: "high", label: "GLM 5.3 Flash high" },
   { id: "glm_5_3_flash_low", model: "glm-5.3-flash", effort: "low", label: "GLM 5.3 Flash low" },
+  { id: "dsh_deepseek_v4_flash_max", model: "dsh-deepseek-v4-flash", effort: "max", label: "DeepSeek·dsh max" },
+  { id: "dsh_deepseek_v4_flash_high", model: "dsh-deepseek-v4-flash", effort: "high", label: "DeepSeek·dsh high" },
 ] as const;
 
 function intelligencePoint(raw: UnknownRecord, at: string): ModelTrendPoint | null {

@@ -89,8 +89,9 @@ test("GitHub Pages build contains the dashboard and a usable data snapshot", asy
     [
       "gpt_6_astra_ultra", "gpt_6_astra_max", "gpt_6_astra_xhigh", "gpt_6_astra_high", "gpt_6_astra_medium", "gpt_6_astra_low",
       "gpt_56_sol_ultra", "gpt_56_sol_max", "gpt_56_sol_xhigh", "gpt_56_sol_high", "gpt_56_sol_medium", "gpt_56_sol_low",
-      "gpt_56_luna_max", "gpt_56_luna_xhigh", "gpt_56_luna_high", "gpt_56_luna_medium", "gpt_56_luna_low",
+      "gpt_56_luna_max", "gpt_56_luna_xhigh", "gpt_56_luna_high",
       "glm_5_3_flash_max", "glm_5_3_flash_high", "glm_5_3_flash_low",
+      "dsh_deepseek_v4_flash_max", "dsh_deepseek_v4_flash_high",
     ],
   );
 });
