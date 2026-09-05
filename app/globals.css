@@ -135,7 +135,7 @@ main::before {
 .chart-heading { padding-top: 1px; }
 .quota-card { margin-top: 21px; overflow: hidden; border: 3px solid var(--line); border-radius: 17px 20px 16px 19px; background: rgba(255, 253, 247, .92); box-shadow: 4px 5px 0 var(--shadow); }
 .quota-card-heading { display: flex; align-items: end; justify-content: space-between; gap: 18px; padding: 16px 18px 15px; border-bottom: 3px solid var(--line); background: var(--yellow); }
-.quota-card-heading h3, .quota-curve-heading h3 { margin: 0; color: var(--ink); font-size: 17px; font-weight: 950; letter-spacing: -.045em; }
+.quota-card-heading h3 { margin: 0; color: var(--ink); font-size: 17px; font-weight: 950; letter-spacing: -.045em; }
 .quota-card-heading p { margin: 5px 0 0; color: #5e5243; font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace; font-size: 10px; font-weight: 700; }
 .quota-card-heading > span { color: #51473b; font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace; font-size: 10px; font-weight: 750; text-align: right; }
 .quota-table-wrap { overflow-x: auto; }
@@ -148,22 +148,6 @@ main::before {
 .quota-table tbody tr:last-child th, .quota-table tbody tr:last-child td { border-bottom: 0; }
 .quota-table a { color: inherit; text-decoration: underline; text-decoration-thickness: 1.5px; text-underline-offset: 3px; }
 .quota-table a:hover { color: var(--mint-deep); }
-.quota-curve-heading { display: flex; align-items: baseline; justify-content: space-between; gap: 18px; margin: 29px 0 12px; }
-.quota-curve-heading > span { padding: 5px 8px; border: 2px solid var(--line); border-radius: 8px; color: var(--ink); background: #f7ffc9; font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace; font-size: 10px; font-weight: 850; text-align: right; }
-.quota-curve-heading > span.is-up { background: #ffc0ae; }
-.quota-curve-heading > span.is-down { background: var(--sky); }
-.curve-figure { margin: 0; padding: 12px 10px 9px; border: 3px solid var(--line); border-radius: 17px 19px 15px 18px; background: rgba(255, 253, 247, .93); box-shadow: 4px 5px 0 var(--shadow); }
-.curve-figure figcaption { display: flex; align-items: baseline; gap: 9px; padding: 0 18px 8px 40px; }
-.curve-figure figcaption span { color: #5c5045; font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace; font-size: 11px; font-weight: 750; }
-.curve-figure figcaption strong { color: var(--ink); font-size: 21px; font-weight: 950; letter-spacing: -.06em; }
-.curve-figure figcaption small { color: #655b50; font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace; font-size: 10px; font-weight: 750; }
-.curve-figure svg { display: block; width: 100%; height: auto; overflow: visible; }
-.curve-grid { stroke: rgba(41, 35, 30, .2); stroke-width: 1.2; }
-.curve-axis { stroke: var(--line); stroke-width: 1.5; }
-.curve-y-label, .curve-x-label { fill: #63584d; font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace; font-size: 10px; font-weight: 700; }
-.curve-line { fill: none; stroke: var(--curve-color); stroke-width: 3; stroke-linecap: round; stroke-linejoin: round; }
-.curve-dot { fill: var(--curve-color); stroke: var(--card); stroke-width: 3; }
-.curve-end-label { fill: var(--ink); font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace; font-size: 10px; font-weight: 900; }
 .chart-note { max-width: 690px; margin: 12px 3px 0; color: #655b50; font-size: 10px; font-weight: 700; line-height: 1.55; }
 
 .model-section { padding-top: 31px; }
@@ -235,11 +219,6 @@ footer small { color: #6a5f52; font-family: ui-monospace, SFMono-Regular, Menlo,
   .quota-card-heading { display: block; padding: 14px 15px 13px; border-bottom-width: 2.5px; }
   .quota-card-heading > span { display: block; margin-top: 8px; text-align: left; }
   .quota-table th, .quota-table td { padding: 13px 15px; }
-  .quota-curve-heading { align-items: start; flex-direction: column; gap: 9px; margin-top: 24px; }
-  .quota-curve-heading > span { text-align: left; }
-  .curve-figure { padding: 9px 3px 6px; border-width: 2.5px; box-shadow: 3px 4px 0 var(--shadow); }
-  .curve-figure figcaption { padding-left: 38px; }
-  .curve-y-label, .curve-x-label, .curve-end-label { font-size: 10px; }
   .model-section { padding-top: 23px; }
   .model-card-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
   .model-card { min-height: 104px; border-width: 2px; box-shadow: 3px 4px 0 var(--shadow); }
@@ -328,8 +307,6 @@ main::before {
 .quota-card-heading > span,
 .quota-table thead th,
 .quota-table tbody td:last-child,
-.curve-figure figcaption span,
-.curve-figure figcaption small,
 .chart-note,
 .model-intro,
 .model-card-label,
@@ -351,17 +328,9 @@ footer small { color: var(--muted); }
 .timeline li.is-latest .timeline-node { background: var(--yellow); }
 .timeline li.is-latest .timeline-node span { background: #10152f; }
 
-.quota-card,
-.curve-figure { border-color: #6688ed; background: rgba(10, 18, 51, .92); box-shadow: 4px 5px 0 var(--shadow), 0 0 16px rgba(75, 107, 231, .13); }
+.quota-card { border-color: #6688ed; background: rgba(10, 18, 51, .92); box-shadow: 4px 5px 0 var(--shadow), 0 0 16px rgba(75, 107, 231, .13); }
 .quota-card-heading { border-bottom-color: #78692d; background: linear-gradient(105deg, var(--yellow), #f7b94f); }
 .quota-table th, .quota-table td { border-bottom-color: rgba(131, 163, 255, .22); }
-.quota-curve-heading > span { color: #10152f; border-color: #d8edff; background: #9ae8e0; }
-.quota-curve-heading > span.is-up { background: #ff9db8; }
-.quota-curve-heading > span.is-down { background: #8eb7ff; }
-.curve-grid { stroke: rgba(151, 180, 255, .22); }
-.curve-axis { stroke: #7399ff; }
-.curve-y-label, .curve-x-label, .curve-end-label { fill: #bdc9ed; }
-.curve-dot { stroke: #0b1335; }
 
 .model-card { border-color: #5979dc; color: var(--ink); background: rgba(12, 21, 57, .96); box-shadow: 4px 5px 0 var(--shadow), 0 0 13px rgba(80, 106, 226, .13); }
 .model-card::before { border-bottom-color: #182757; }

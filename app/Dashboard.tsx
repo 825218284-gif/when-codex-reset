@@ -1,7 +1,7 @@
 "use client";
 
-import { useEffect, useMemo, useState, type CSSProperties } from "react";
-import type { ModelTrendPoint, ModelTrendSeries, ResetBriefing, TrendPoint } from "./lib/briefing";
+import { useEffect, useState, type CSSProperties } from "react";
+import type { ModelTrendPoint, ModelTrendSeries, ResetBriefing } from "./lib/briefing";
 
 const CODEX_RESETS_URL = "https://codex-resets.com/";
 const CODEX_RADAR_CURRENT_URL = "https://codexradar.com/current.json";
@@ -131,24 +131,6 @@ function formatSourceUpdatedAt(value?: string | null) {
   }).format(date);
 }
 
-function formatChartDate(value: string) {
-  const quotaMatch = value.match(/^\d{4}-(\d{2})-(\d{2})(?:-(am|pm))?$/i);
-  if (quotaMatch) {
-    const period = quotaMatch[3] ? ` ${quotaMatch[3].toUpperCase()}` : "";
-    return `${Number(quotaMatch[1])}/${Number(quotaMatch[2])}${period}`;
-  }
-  const date = new Date(value);
-  if (Number.isNaN(date.getTime())) return value;
-  return new Intl.DateTimeFormat("zh-CN", {
-    month: "numeric",
-    day: "numeric",
-    hour: "2-digit",
-    minute: "2-digit",
-    hour12: false,
-    timeZone: "Asia/Shanghai",
-  }).format(date);
-}
-
 function formatResetTimelineDate(value: string) {
   const match = value.match(/(?:\d{4}[./-])?(\d{1,2})[./-](\d{1,2})(?:\s+(\d{1,2}:\d{2}))?/);
   if (match) {
@@ -177,101 +159,11 @@ function formatCardCost(value: number | null) {
   return `$${value.toFixed(Math.abs(value) < 0.1 ? 3 : 1)}`;
 }
 
-function formatSignedValue(value: number, unit: string) {
-  const sign = value > 0 ? "+" : value < 0 ? "−" : "";
-  return `${sign}${formatValue(Math.abs(value), unit)}`;
-}
-
 function SourceCaption({ href, label }: { href: string; label: string }) {
   return (
     <p className="source-caption">
       数据来源：<a href={href} target="_blank" rel="noreferrer">{label} ↗</a>
     </p>
-  );
-}
-
-function CurveChart({
-  title,
-  points,
-  unit,
-  color,
-}: {
-  title: string;
-  points: TrendPoint[];
-  unit: string;
-  color: string;
-}) {
-  const width = 760;
-  const height = 224;
-  // Reserve enough SVG space for four-digit currency tick labels on narrow screens.
-  const left = 72;
-  const right = 18;
-  const top = 14;
-  const bottom = 34;
-  const plotWidth = width - left - right;
-  const plotHeight = height - top - bottom;
-  const valid = points
-    .map((point, index) => ({ ...point, index }))
-    .filter((point): point is TrendPoint & { index: number; value: number } => point.value !== null);
-  const values = valid.map((point) => point.value);
-  const baseMin = values.length ? Math.min(...values) : 0;
-  const baseMax = values.length ? Math.max(...values) : 1;
-  const spread = Math.max(baseMax - baseMin, Math.abs(baseMax) * 0.08, 1);
-  const min = baseMin - spread * 0.14;
-  const max = baseMax + spread * 0.14;
-  const x = (index: number) =>
-    points.length <= 1 ? left + plotWidth / 2 : left + (index / (points.length - 1)) * plotWidth;
-  const y = (value: number) => top + ((max - value) / (max - min)) * plotHeight;
-  const path = points.reduce((accumulator, point, index) => {
-    if (point.value === null) return { value: accumulator.value, gap: true };
-    const command = accumulator.gap ? "M" : "L";
-    return { value: `${accumulator.value}${command}${x(index).toFixed(2)},${y(point.value).toFixed(2)} `, gap: false };
-  }, { value: "", gap: true }).value;
-  const yTicks = [0, 1, 2, 3].map((index) => max - ((max - min) * index) / 3);
-  const xIndexes = [...new Set([0, Math.floor((points.length - 1) / 2), Math.max(points.length - 1, 0)])];
-  const latest = valid.at(-1);
-  const chartStyle = { "--curve-color": color } as CSSProperties;
-
-  return (
-    <figure className="curve-figure" style={chartStyle}>
-      <figcaption>
-        <span>{unit}</span>
-        <strong>{latest ? formatValue(latest.value, unit) : "—"}</strong>
-        <small>{latest ? formatChartDate(latest.at) : "等待公开数据"}</small>
-      </figcaption>
-      <svg viewBox={`0 0 ${width} ${height}`} role="img" aria-label={`${title} 曲线，单位 ${unit}`}>
-        <title>{title}</title>
-        <desc>显示来源公开数据随时间的变化。最新可用值为 {latest ? formatValue(latest.value, unit) : "暂无"}。</desc>
-        {yTicks.map((tick) => (
-          <g key={tick}>
-            <line className="curve-grid" x1={left} x2={width - right} y1={y(tick)} y2={y(tick)} />
-            <text className="curve-y-label" x={left - 9} y={y(tick) + 4} textAnchor="end">
-              {formatValue(tick, unit)}
-            </text>
-          </g>
-        ))}
-        <line className="curve-axis" x1={left} x2={width - right} y1={top + plotHeight} y2={top + plotHeight} />
-        {xIndexes.map((index) => (
-          <text className="curve-x-label" key={index} x={x(index)} y={height - 11} textAnchor="middle">
-            {points[index] ? formatChartDate(points[index].at) : ""}
-          </text>
-        ))}
-        {path ? <path className="curve-line" d={path} /> : null}
-        {valid.map((point) => (
-          <circle className="curve-dot" cx={x(point.index)} cy={y(point.value)} r="3.6" key={`${point.at}-${point.index}`} />
-        ))}
-        {latest ? (
-          <text
-            className="curve-end-label"
-            x={x(latest.index) > width - 102 ? x(latest.index) - 8 : x(latest.index) + 8}
-            y={Math.max(y(latest.value) - 10, 14)}
-            textAnchor={x(latest.index) > width - 102 ? "end" : "start"}
-          >
-            {formatValue(latest.value, unit)}
-          </text>
-        ) : null}
-      </svg>
-    </figure>
   );
 }
 
@@ -326,29 +218,12 @@ export default function Dashboard() {
     return () => window.clearTimeout(initialLoad);
   }, []);
 
-  const quota = data?.quotaTrends.find((series) => series.id === "pro20-7d") ?? data?.quotaTrends[0];
   const modelTrends = data?.modelTrends ?? [];
   const latestResetTime = formatBeijing(data?.latestConfirmed?.occurredAt);
   const requestFailureState: FreshnessState | null = error ? (data ? "cached" : "unavailable") : null;
   const resetFreshness = requestFailureState ?? freshnessState(data, data?.generatedAt, "reset", 3);
   const quotaFreshness = requestFailureState ?? freshnessState(data, data?.quotaUpdatedAt, "quota", 24);
   const modelFreshness = requestFailureState ?? freshnessState(data, data?.modelUpdatedAt, "model", 6);
-  const quotaSummary = useMemo(() => {
-    if (!quota) return null;
-    const valid = quota.points.filter(
-      (point): point is TrendPoint & { value: number } => point.value !== null,
-    );
-    const previous = valid.at(-2) ?? valid[0];
-    const latest = valid.at(-1);
-    if (!previous || !latest) return null;
-    const delta = latest.value - previous.value;
-    return {
-      previous: previous.value,
-      latest: latest.value,
-      delta,
-      percent: previous.value === 0 ? null : (delta / previous.value) * 100,
-    };
-  }, [quota]);
 
   return (
     <main>
@@ -430,7 +305,7 @@ export default function Dashboard() {
         <section className="chart-section" aria-labelledby="quota-title">
           <div className="section-heading chart-heading">
             <div>
-              <p className="eyebrow">PUBLIC QUOTA TREND</p>
+              <p className="eyebrow">PUBLIC QUOTA</p>
               <h2 id="quota-title">额度雷达</h2>
             </div>
             <div className="heading-status">
@@ -467,16 +342,6 @@ export default function Dashboard() {
               </table>
             </div>
           </div>
-          <div className="quota-curve-heading">
-            <h3>20x Pro · 7d 额度变化</h3>
-            {quotaSummary ? (
-              <span className={quotaSummary.delta >= 0 ? "is-up" : "is-down"}>
-                {formatValue(quotaSummary.previous, "USD / 7d")} → {formatValue(quotaSummary.latest, "USD / 7d")} ({formatSignedValue(quotaSummary.delta, "USD / 7d")}{quotaSummary.percent === null ? "" : `，${quotaSummary.percent > 0 ? "+" : ""}${quotaSummary.percent.toFixed(1)}%`})
-              </span>
-            ) : null}
-          </div>
-          {quota ? <CurveChart title={`${quota.label} 额度变化`} points={quota.points} unit={quota.unit} color="#49c5a1" /> : <div className="empty-state">等待额度趋势数据。</div>}
-          <p className="chart-note">仅展示一条可持续读取的 20x Pro 7d 公开曲线。</p>
           <SourceCaption href={CODEX_RADAR_CURRENT_URL} label="Codex Radar · current.json" />
         </section>
 

@@ -7,31 +7,6 @@ main .quota-card-heading p,
 main .quota-card-heading > span { color: #273a66; }
 
 main .chart-section { min-width: 0; overflow: hidden; }
-main .quota-curve-heading { min-width: 0; align-items: flex-start; }
-main .quota-curve-heading h3 { min-width: 0; overflow-wrap: anywhere; }
-main .quota-curve-heading > span {
-  flex: 0 1 auto;
-  max-width: 100%;
-  padding: 0;
-  border: 0;
-  border-radius: 0;
-  color: var(--ink);
-  background: transparent;
-  box-shadow: none;
-  font-family: inherit;
-  font-size: 17px;
-  font-weight: 950;
-  letter-spacing: -.045em;
-  line-height: 1.15;
-  overflow-wrap: anywhere;
-  text-align: right;
-}
-main .quota-curve-heading > span.is-up,
-main .quota-curve-heading > span.is-down { background: transparent; }
-main .curve-figure { width: 100%; max-width: 100%; min-width: 0; overflow: hidden; }
-main .curve-figure figcaption { min-width: 0; flex-wrap: wrap; padding: 0 12px 8px 36px; }
-main .curve-figure figcaption strong { min-width: 0; overflow-wrap: anywhere; }
-main .curve-figure svg { max-width: 100%; min-width: 0; }
 main .model-section { background-size: 100% 100%; background-repeat: no-repeat; }
 
 .source-caption,
@@ -39,10 +14,3 @@ main .model-section { background-size: 100% 100%; background-repeat: no-repeat; 
 .model-intro,
 footer,
 footer small { font-size: 11px; }
-
-@media (max-width: 720px) {
-  main .quota-curve-heading { display: grid; grid-template-columns: minmax(0, 1fr); gap: 8px; }
-  main .quota-curve-heading > span { text-align: left; }
-  main .curve-figure figcaption { padding-left: 32px; }
-  main .curve-figure figcaption strong { font-size: 17px; }
-}
