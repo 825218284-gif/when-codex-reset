@@ -46,7 +46,7 @@ main::before {
 .halo { position: absolute; z-index: -1; border-radius: 50%; pointer-events: none; filter: none; opacity: .26; }
 .halo-top { top: -21rem; right: -14rem; width: 48rem; height: 48rem; background: var(--yellow); }
 .halo-bottom { bottom: -19rem; left: -17rem; width: 42rem; height: 42rem; background: var(--pink); }
-.shell { width: min(1120px, calc(100% - 48px)); margin: 0 auto; padding: 10px 0 36px; }
+.shell { width: min(1360px, calc(100% - 48px)); margin: 0 auto; padding: 10px 0 36px; }
 
 .topbar { display: flex; align-items: center; justify-content: space-between; gap: 18px; min-height: 82px; padding: 7px 4px 18px; }
 .brand { display: inline-flex; align-items: center; gap: 13px; color: var(--ink); font-size: clamp(18px, 2.25vw, 25px); font-weight: 900; letter-spacing: -.055em; text-decoration: none; }
@@ -133,32 +133,17 @@ main::before {
 .empty-state { padding: 50px 0; color: #5f5549; font-size: 13px; font-weight: 750; text-align: center; }
 
 .chart-heading { padding-top: 1px; }
-.quota-card { margin-top: 21px; overflow: hidden; border: 3px solid var(--line); border-radius: 17px 20px 16px 19px; background: rgba(255, 253, 247, .92); box-shadow: 4px 5px 0 var(--shadow); }
-.quota-card-heading { display: flex; align-items: end; justify-content: space-between; gap: 18px; padding: 16px 18px 15px; border-bottom: 3px solid var(--line); background: var(--yellow); }
-.quota-card-heading h3 { margin: 0; color: var(--ink); font-size: 17px; font-weight: 950; letter-spacing: -.045em; }
-.quota-card-heading p { margin: 5px 0 0; color: #5e5243; font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace; font-size: 10px; font-weight: 700; }
-.quota-card-heading > span { color: #51473b; font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace; font-size: 10px; font-weight: 750; text-align: right; }
-.quota-table-wrap { overflow-x: auto; }
-.quota-table { width: 100%; min-width: 480px; border-collapse: collapse; }
-.quota-table th, .quota-table td { padding: 13px 18px; border-bottom: 2px solid rgba(41, 35, 30, .34); text-align: left; white-space: nowrap; }
-.quota-table thead th { color: #5c5042; font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace; font-size: 10px; font-weight: 800; letter-spacing: .06em; }
-.quota-table tbody th { color: var(--ink); font-size: 15px; font-weight: 900; }
-.quota-table tbody td { color: var(--ink); font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace; font-size: 13px; font-weight: 900; }
-.quota-table tbody td:last-child { color: #5e554b; font-family: inherit; font-size: 11px; font-weight: 750; }
-.quota-table tbody tr:last-child th, .quota-table tbody tr:last-child td { border-bottom: 0; }
-.quota-table a { color: inherit; text-decoration: underline; text-decoration-thickness: 1.5px; text-underline-offset: 3px; }
-.quota-table a:hover { color: var(--mint-deep); }
 .chart-note { max-width: 690px; margin: 12px 3px 0; color: #655b50; font-size: 10px; font-weight: 700; line-height: 1.55; }
 
 .model-section { padding-top: 31px; }
 .model-intro { margin: 15px 2px 0; color: #4e4941; font-size: 11px; font-weight: 700; line-height: 1.55; }
-.model-card-grid { display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); gap: 14px 12px; margin-top: 19px; }
+.model-card-grid { display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); gap: 16px 14px; margin-top: 19px; }
 .model-card-grid > .model-card:nth-child(19) { grid-column: 3; }
-.model-card { position: relative; display: grid; grid-template-columns: minmax(0, 1.55fr) minmax(62px, .75fr); min-height: 112px; overflow: hidden; padding: 0; border: 2px solid var(--line); border-radius: 14px; color: var(--ink); background: #fffdf7; box-shadow: 4px 5px 0 var(--shadow); text-align: left; }
+.model-card { position: relative; display: grid; grid-template-columns: minmax(0, 1.5fr) minmax(78px, 1fr); min-height: 112px; overflow: hidden; padding: 0; border: 2px solid var(--line); border-radius: 14px; color: var(--ink); background: #fffdf7; box-shadow: 4px 5px 0 var(--shadow); text-align: left; }
 .model-card::before { position: absolute; top: 0; right: 0; left: 0; height: 8px; border-bottom: 2px solid var(--line); background: var(--model-color); content: ""; }
-.model-card-main { display: flex; min-width: 0; flex-direction: column; justify-content: space-between; padding: 19px 11px 13px; }
+.model-card-main { display: flex; min-width: 0; flex-direction: column; justify-content: space-between; padding: 20px 14px 14px; }
 .model-card-label { display: block; overflow: hidden; color: #4d463e; font-size: 11px; font-weight: 900; letter-spacing: -.02em; text-overflow: ellipsis; white-space: nowrap; }
-.model-card-score { color: var(--ink); font-size: clamp(30px, 2.4vw, 39px); font-weight: 950; letter-spacing: -.08em; line-height: .82; }
+.model-card-score { color: var(--ink); font-size: clamp(30px, 2.3vw, 42px); font-weight: 950; letter-spacing: -.08em; line-height: .82; }
 .model-card-meta { display: grid; min-width: 0; grid-template-rows: 1fr 1fr 1fr; border-left: 2px solid rgba(126, 145, 195, .58); color: #514a42; font-size: 11px; font-weight: 850; text-align: center; }
 .model-card-meta b,
 .model-card-meta small { display: flex; min-width: 0; align-items: center; justify-content: center; padding: 6px 5px; color: inherit; font-size: inherit; font-weight: 900; white-space: nowrap; }
@@ -183,8 +168,8 @@ footer a i.unavailable { background: #f0a65b; }
 footer small { color: #6a5f52; font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace; font-size: 10px; }
 .footer-status { color: var(--muted); font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace; font-size: 11px; }
 
-@media (max-width: 1100px) {
-  .model-card-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+@media (max-width: 1280px) {
+  .model-card-grid { grid-template-columns: repeat(4, minmax(0, 1fr)); }
   .model-card-grid > .model-card:nth-child(19) { grid-column: auto; }
 }
 
@@ -215,10 +200,6 @@ footer small { color: #6a5f52; font-family: ui-monospace, SFMono-Regular, Menlo,
   .timeline-node { width: 27px; height: 27px; border-width: 2px; box-shadow: 1px 2px 0 var(--shadow); }
   .timeline-node span { width: 8px; height: 8px; }
   .timeline time strong { font-size: 13px; }
-  .quota-card { margin-top: 16px; border-width: 2.5px; box-shadow: 3px 4px 0 var(--shadow); }
-  .quota-card-heading { display: block; padding: 14px 15px 13px; border-bottom-width: 2.5px; }
-  .quota-card-heading > span { display: block; margin-top: 8px; text-align: left; }
-  .quota-table th, .quota-table td { padding: 13px 15px; }
   .model-section { padding-top: 23px; }
   .model-card-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
   .model-card { min-height: 104px; border-width: 2px; box-shadow: 3px 4px 0 var(--shadow); }
@@ -239,17 +220,6 @@ footer small { color: #6a5f52; font-family: ui-monospace, SFMono-Regular, Menlo,
   .latest-reset-time { display: grid; width: 100%; gap: 12px; font-size: clamp(31px, 10vw, 42px); letter-spacing: -.06em; }
   .timeline-section, .chart-section { padding-inline: 14px; }
   .section-heading h2 { font-size: 28px; }
-
-  .quota-table-wrap { overflow: visible; }
-  .quota-table { display: block; min-width: 0; }
-  .quota-table thead { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); clip-path: inset(50%); white-space: nowrap; }
-  .quota-table tbody { display: grid; }
-  .quota-table tr { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); padding: 12px 13px; border-bottom: 2px solid rgba(131, 163, 255, .22); }
-  .quota-table tr:last-child { border-bottom: 0; }
-  .quota-table th, .quota-table td { display: grid; min-width: 0; gap: 3px; padding: 3px 0; border: 0 !important; white-space: normal; }
-  .quota-table td:nth-child(2) { text-align: right; }
-  .quota-table td:last-child { grid-column: 1 / -1; margin-top: 6px; padding-top: 8px; border-top: 1px dashed rgba(131, 163, 255, .28) !important; }
-  .quota-table th::before, .quota-table td::before { color: var(--muted); content: attr(data-label); font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace; font-size: 10px; font-weight: 750; }
 
   .model-card-grid { grid-template-columns: minmax(0, 1fr); gap: 11px; }
   .model-card-grid > .model-card:nth-child(19) { grid-column: auto; }
@@ -295,18 +265,13 @@ main::before {
 .signal-panel article { border-color: rgba(111, 148, 255, .5); }
 .eyebrow, .signal-panel p, .latest-card .latest-timezone, .source-caption { color: var(--muted); }
 .latest-reset-time,
-.timeline-latest-link,
-.quota-card-heading { color: #10152f; background: var(--yellow); }
+.timeline-latest-link { color: #10152f; background: var(--yellow); }
 .latest-reset-time { border-color: #f8e98d; box-shadow: 5px 6px 0 var(--shadow), 0 0 24px rgba(255, 215, 104, .32); }
 .latest-card a, .source-caption a { color: var(--mint-deep); }
 .signal-panel > article > span,
 .timeline time small,
 .section-heading span,
 .empty-state,
-.quota-card-heading p,
-.quota-card-heading > span,
-.quota-table thead th,
-.quota-table tbody td:last-child,
 .chart-note,
 .model-intro,
 .model-card-label,
@@ -314,7 +279,7 @@ main::before {
 footer,
 footer small { color: var(--muted); }
 
-.source-caption a:hover, .quota-table a:hover, footer a:hover { color: var(--yellow); }
+.source-caption a:hover, footer a:hover { color: var(--yellow); }
 .error-message { color: #10152f; background: #f0a65b; }
 
 .timeline-section,
@@ -327,10 +292,6 @@ footer small { color: var(--muted); }
 .timeline-node span { background: var(--mint); }
 .timeline li.is-latest .timeline-node { background: var(--yellow); }
 .timeline li.is-latest .timeline-node span { background: #10152f; }
-
-.quota-card { border-color: #6688ed; background: rgba(10, 18, 51, .92); box-shadow: 4px 5px 0 var(--shadow), 0 0 16px rgba(75, 107, 231, .13); }
-.quota-card-heading { border-bottom-color: #78692d; background: linear-gradient(105deg, var(--yellow), #f7b94f); }
-.quota-table th, .quota-table td { border-bottom-color: rgba(131, 163, 255, .22); }
 
 .model-card { border-color: #5979dc; color: var(--ink); background: rgba(12, 21, 57, .96); box-shadow: 4px 5px 0 var(--shadow), 0 0 13px rgba(80, 106, 226, .13); }
 .model-card::before { border-bottom-color: #182757; }

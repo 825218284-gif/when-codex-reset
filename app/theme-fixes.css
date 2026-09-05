@@ -2,10 +2,6 @@
 .signal-panel .data-status,
 .section-heading .data-status { color: #10152f; }
 
-main .quota-card-heading h3 { color: #10152f; }
-main .quota-card-heading p,
-main .quota-card-heading > span { color: #273a66; }
-
 main .chart-section { min-width: 0; overflow: hidden; }
 main .model-section { background-size: 100% 100%; background-repeat: no-repeat; }
 

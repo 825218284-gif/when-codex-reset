@@ -4,7 +4,6 @@ import { useEffect, useState, type CSSProperties } from "react";
 import type { ModelTrendPoint, ModelTrendSeries, ResetBriefing } from "./lib/briefing";
 
 const CODEX_RESETS_URL = "https://codex-resets.com/";
-const CODEX_RADAR_CURRENT_URL = "https://codexradar.com/current.json";
 const CODEX_RADAR_INTELLIGENCE_URL = "https://codexradar.com/data/intelligence-efficiency.json";
 
 type FreshnessState = "fresh" | "stale" | "cached" | "unavailable" | "loading";
@@ -222,7 +221,6 @@ export default function Dashboard() {
   const latestResetTime = formatBeijing(data?.latestConfirmed?.occurredAt);
   const requestFailureState: FreshnessState | null = error ? (data ? "cached" : "unavailable") : null;
   const resetFreshness = requestFailureState ?? freshnessState(data, data?.generatedAt, "reset", 3);
-  const quotaFreshness = requestFailureState ?? freshnessState(data, data?.quotaUpdatedAt, "quota", 24);
   const modelFreshness = requestFailureState ?? freshnessState(data, data?.modelUpdatedAt, "model", 6);
 
   return (
@@ -302,49 +300,6 @@ export default function Dashboard() {
             <SourceCaption href={CODEX_RESETS_URL} label="Codex Resets" />
         </section>
 
-        <section className="chart-section" aria-labelledby="quota-title">
-          <div className="section-heading chart-heading">
-            <div>
-              <p className="eyebrow">PUBLIC QUOTA</p>
-              <h2 id="quota-title">额度雷达</h2>
-            </div>
-            <div className="heading-status">
-              <span>{formatSourceUpdatedAt(data?.quotaUpdatedAt)} 更新</span>
-              <DataStatus state={quotaFreshness} />
-            </div>
-          </div>
-          <div className="quota-card">
-            <div className="quota-card-heading">
-              <div>
-                <h3>公开 7d 额度</h3>
-                <p>当前公开观测快照</p>
-              </div>
-              <span>不代表个人剩余额度</span>
-            </div>
-            <div className="quota-table-wrap">
-              <table className="quota-table">
-                <thead>
-                  <tr>
-                    <th scope="col">档位</th>
-                    <th scope="col">7d 额度</th>
-                    <th scope="col">来源</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {data?.quotaSnapshot.map((row) => (
-                    <tr key={row.tier}>
-                      <th scope="row" data-label="档位">{row.tier}</th>
-                      <td data-label="7d 额度">{row.sevenDayQuota === null ? "—" : formatValue(row.sevenDayQuota, "USD / 7d")}</td>
-                      <td data-label="来源"><a href={CODEX_RADAR_CURRENT_URL} target="_blank" rel="noreferrer">{row.basis} ↗</a></td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          </div>
-          <SourceCaption href={CODEX_RADAR_CURRENT_URL} label="Codex Radar · current.json" />
-        </section>
-
         <section className="chart-section model-section" aria-labelledby="model-title">
           <div className="section-heading chart-heading">
             <div>
@@ -369,12 +324,12 @@ export default function Dashboard() {
         </section>
 
         <footer>
-          <p>公开重置记录、额度和模型数据来自页面标注来源；个人账户的滚动限额请以 Codex 设置页为准。</p>
+          <p>公开重置记录和模型数据来自页面标注来源；个人账户的滚动限额请以 Codex 设置页为准。</p>
           <p className="footer-status" aria-live="polite">
-            页面快照：{formatSourceUpdatedAt(data?.generatedAt)} · 重置 {freshnessLabel(resetFreshness)} · 额度 {freshnessLabel(quotaFreshness)} · 模型 {freshnessLabel(modelFreshness)}
+            页面快照：{formatSourceUpdatedAt(data?.generatedAt)} · 重置 {freshnessLabel(resetFreshness)} · 模型 {freshnessLabel(modelFreshness)}
           </p>
           <div>
-            {data?.sources.filter((source) => source.name !== "Codex Reset Radar").map((source) => {
+            {data?.sources.filter((source) => source.key !== "quota" && source.name !== "Codex Reset Radar").map((source) => {
               const state = requestFailureState ?? freshnessState(data, source.dataUpdatedAt ?? data.generatedAt, source.key, freshnessHours(source.key));
               return (
                 <a href={source.url} target="_blank" rel="noreferrer" key={source.name}>
