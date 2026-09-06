@@ -95,7 +95,7 @@ function modelColor(id: string) {
 }
 
 function shortModelLabel(label: string) {
-  return label.replace(/^(?:GPT-(?:5\.6|6)|GLM 5\.3)\s+/i, "");
+  return label.replace(/^GPT-(?:5\.6|6)\s+/i, "");
 }
 
 function latestModelPoint(series: ModelTrendSeries): ModelTrendPoint | null {

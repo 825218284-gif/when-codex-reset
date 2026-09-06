@@ -140,11 +140,11 @@ main::before {
 .model-section { padding-top: 31px; }
 .model-intro { margin: 15px 2px 0; color: #4e4941; font-size: 11px; font-weight: 700; line-height: 1.55; }
 .model-card-grid { display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); gap: 16px 14px; margin-top: 19px; }
-.model-card-grid > .model-card:nth-child(19) { grid-column: 3; }
+.model-card-grid > .model-card:nth-child(18) { grid-column: 3; }
 .model-card { position: relative; display: grid; grid-template-columns: minmax(0, 1.5fr) minmax(78px, 1fr); min-height: 112px; overflow: hidden; padding: 0; border: 2px solid var(--line); border-radius: 14px; color: var(--ink); background: #fffdf7; box-shadow: 4px 5px 0 var(--shadow); text-align: left; }
 .model-card::before { position: absolute; top: 0; right: 0; left: 0; height: 8px; border-bottom: 2px solid var(--line); background: var(--model-color); content: ""; }
 .model-card-main { display: flex; min-width: 0; flex-direction: column; justify-content: space-between; padding: 20px 14px 14px; }
-.model-card-label { display: block; overflow: hidden; color: #4d463e; font-size: 11px; font-weight: 900; letter-spacing: -.02em; text-overflow: ellipsis; white-space: nowrap; }
+.model-card-label { display: block; color: #4d463e; font-size: 13px; font-weight: 900; letter-spacing: -.02em; line-height: 1.25; }
 .model-card-score { color: var(--ink); font-size: clamp(30px, 2.3vw, 42px); font-weight: 950; letter-spacing: -.08em; line-height: .82; }
 .model-card-meta { display: grid; min-width: 0; grid-template-rows: 1fr 1fr 1fr; border-left: 2px solid rgba(126, 145, 195, .58); color: #514a42; font-size: 11px; font-weight: 850; text-align: center; }
 .model-card-meta b,
@@ -172,7 +172,7 @@ footer small { color: #6a5f52; font-family: ui-monospace, SFMono-Regular, Menlo,
 
 @media (max-width: 1280px) {
   .model-card-grid { grid-template-columns: repeat(4, minmax(0, 1fr)); }
-  .model-card-grid > .model-card:nth-child(19) { grid-column: auto; }
+  .model-card-grid > .model-card:nth-child(18) { grid-column: auto; }
 }
 
 @media (max-width: 720px) {
@@ -224,7 +224,7 @@ footer small { color: #6a5f52; font-family: ui-monospace, SFMono-Regular, Menlo,
   .section-heading h2 { font-size: 28px; }
 
   .model-card-grid { grid-template-columns: minmax(0, 1fr); gap: 11px; }
-  .model-card-grid > .model-card:nth-child(19) { grid-column: auto; }
+  .model-card-grid > .model-card:nth-child(18) { grid-column: auto; }
   .model-card { grid-template-columns: minmax(0, 1fr) minmax(94px, .72fr); min-height: 112px; }
   .model-card-main { padding: 20px 14px 13px; }
   .model-card-label { overflow: visible; font-size: 13px; text-overflow: clip; white-space: normal; }

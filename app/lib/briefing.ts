@@ -100,7 +100,6 @@ export const expectedModelIds = [
   "gpt_56_luna_high",
   "glm_5_3_flash_max",
   "glm_5_3_flash_high",
-  "glm_5_3_flash_low",
   "dsh_deepseek_v4_flash_max",
   "dsh_deepseek_v4_flash_high",
 ] as const;

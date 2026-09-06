@@ -168,7 +168,6 @@ const intelligenceConfigurations = [
   { id: "gpt_56_luna_high", model: "gpt-5.6-luna", effort: "high", label: "GPT-5.6 Luna high" },
   { id: "glm_5_3_flash_max", model: "glm-5.3-flash", effort: "max", label: "GLM 5.3 Flash max" },
   { id: "glm_5_3_flash_high", model: "glm-5.3-flash", effort: "high", label: "GLM 5.3 Flash high" },
-  { id: "glm_5_3_flash_low", model: "glm-5.3-flash", effort: "low", label: "GLM 5.3 Flash low" },
   { id: "dsh_deepseek_v4_flash_max", model: "dsh-deepseek-v4-flash", effort: "max", label: "DeepSeek·dsh max" },
   { id: "dsh_deepseek_v4_flash_high", model: "dsh-deepseek-v4-flash", effort: "high", label: "DeepSeek·dsh high" },
 ] as const;
