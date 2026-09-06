@@ -105,6 +105,9 @@ main::before {
   border-radius: 26px 31px 25px 34px;
   background: var(--card);
   box-shadow: 8px 9px 0 var(--shadow);
+  /* Skip layout and paint for sections that are off screen on load. */
+  content-visibility: auto;
+  contain-intrinsic-size: auto 620px;
 }
 .timeline-section { background-color: var(--card); background-image: radial-gradient(circle, rgba(129, 111, 89, .13) 1px, transparent 1.5px); background-size: 20px 20px; transform: rotate(-.18deg); }
 .chart-section { background-color: var(--card); background-image: radial-gradient(circle, rgba(129, 111, 89, .13) 1px, transparent 1.5px); background-size: 20px 20px; }
@@ -247,17 +250,18 @@ body {
     radial-gradient(circle at 12% 8%, rgba(74, 98, 225, .31), transparent 23rem),
     radial-gradient(circle at 92% 76%, rgba(230, 80, 122, .20), transparent 26rem),
     var(--paper);
-}
-main::before {
+}main::before {
   background-image:
     radial-gradient(circle, rgba(198, 217, 255, .6) 1px, transparent 1.7px),
     radial-gradient(circle, rgba(78, 224, 208, .36) 1px, transparent 1.8px);
   background-position: 0 0, 13px 17px;
   background-size: 29px 29px, 47px 47px;
 }
-.halo { opacity: .55; filter: blur(8px); }
-.halo-top { background: #526fed; }
-.halo-bottom { background: #d84473; }
+/* Solid discs painted as radial gradients: same look as a blurred disc
+   without keeping a filter layer on the GPU for the whole page life. */
+.halo { opacity: .55; }
+.halo-top { background: radial-gradient(closest-side, #526fed 97.5%, rgba(82, 111, 237, 0)); }
+.halo-bottom { background: radial-gradient(closest-side, #d84473 97.5%, rgba(216, 68, 115, 0)); }
 .brand { color: var(--ink); letter-spacing: -.035em; text-shadow: 0 0 18px rgba(120, 153, 255, .26); }
 .brand-signal { border-color: #9ab7ff; background: linear-gradient(145deg, #17275c, #0c1334); box-shadow: 4px 5px 0 var(--shadow), 0 0 16px rgba(72, 224, 208, .38); }
 .brand-signal i, .brand-signal i:nth-child(3) { background: #eaf2ff; }

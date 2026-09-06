@@ -69,11 +69,12 @@ function DataStatus({ state }: { state: FreshnessState }) {
   return <span className={`data-status is-${state}`}>{freshnessLabel(state)}</span>;
 }
 
-function briefingUrl() {
+function briefingUrl(bustCache: boolean) {
   const staticUrl = typeof document === "undefined"
     ? ""
     : document.getElementById("root")?.dataset.briefingUrl ?? "";
   const baseUrl = staticUrl || "/api/briefing";
+  if (!bustCache) return baseUrl;
   const separator = baseUrl.includes("?") ? "&" : "?";
   return `${baseUrl}${separator}refresh=${Date.now()}`;
 }
@@ -218,11 +219,11 @@ export default function Dashboard() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
 
-  async function refresh() {
+  async function refresh(bustCache = false) {
     setLoading(true);
     setError("");
     try {
-      const response = await fetch(briefingUrl(), { cache: "no-store" });
+      const response = await fetch(briefingUrl(bustCache), { cache: "no-store" });
       const next = (await response.json()) as ResetBriefing;
       if (!response.ok) throw new Error("source unavailable");
       setData(next);
@@ -255,7 +256,7 @@ export default function Dashboard() {
             <h1>Codex 重置雷达</h1>
           </a>
           <div className="refresh-area">
-            <button className="refresh" onClick={() => void refresh()} disabled={loading}>
+            <button className="refresh" onClick={() => void refresh(true)} disabled={loading}>
               <span aria-hidden="true">↻</span>
               {loading ? "读取中" : "重新读取"}
             </button>
