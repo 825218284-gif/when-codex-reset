@@ -4,7 +4,7 @@ import { useEffect, useState, type CSSProperties } from "react";
 import type { ModelTrendPoint, ModelTrendSeries, ResetBriefing } from "./lib/briefing";
 
 const CODEX_RESETS_URL = "https://codex-resets.com/";
-const CODEX_RADAR_INTELLIGENCE_URL = "https://codexradar.com/data/intelligence-efficiency.json";
+const CODEX_RADAR_URL = "https://codexradar.com/";
 
 type FreshnessState = "fresh" | "stale" | "cached" | "unavailable" | "loading";
 
@@ -168,10 +168,25 @@ function SourceCaption({ href, label }: { href: string; label: string }) {
   );
 }
 
+function modelIcon(id: string) {
+  if (id.includes("_sol_")) return { text: "☀️", zai: false };
+  if (id.includes("_luna_")) return { text: "🌙", zai: false };
+  if (id.startsWith("gpt_6_astra")) return { text: "⭐", zai: false };
+  if (id.startsWith("dsh_")) return { text: "🐋", zai: false };
+  if (id.startsWith("glm_")) return { text: "Z", zai: true };
+  return { text: "✦", zai: false };
+}
+
+function modelEffort(id: string) {
+  return id.slice(id.lastIndexOf("_") + 1);
+}
+
 function ModelCard({ series }: { series: ModelTrendSeries }) {
   const latest = latestModelPoint(series);
   const color = modelColor(series.id);
-  const label = shortModelLabel(series.label);
+  const icon = modelIcon(series.id);
+  const effort = modelEffort(series.id);
+  const label = shortModelLabel(series.label).replace(new RegExp(`\\s*${effort}$`), "");
   const score = latest?.score === null || latest?.score === undefined ? "—" : formatValue(latest.score, "IQ");
   const price = formatCardCost(latest?.cost ?? null);
   const duration = latest?.duration ?? "时间待来源补全";
@@ -180,9 +195,13 @@ function ModelCard({ series }: { series: ModelTrendSeries }) {
     : `${formatValue(latest.value, "IQ / USD")} IQ/$`;
 
   return (
-    <article className="model-card" style={{ "--model-color": color } as CSSProperties}>
+    <article className="model-card" data-effort={effort} style={{ "--model-color": color } as CSSProperties}>
       <span className="model-card-main">
-        <span className="model-card-label">{label}</span>
+        <span className="model-card-label">
+          <span className={icon.zai ? "model-card-icon is-zai" : "model-card-icon"} aria-hidden="true">{icon.text}</span>
+          <span className="model-card-name">{label}</span>
+          <em className="model-card-effort">{effort}</em>
+        </span>
         <strong className="model-card-score">{score}</strong>
       </span>
       <span className="model-card-meta">
@@ -325,7 +344,7 @@ export default function Dashboard() {
             </div>
           ) : <div className="empty-state">等待模型数据。</div>}
           <p className="chart-note">性价比 = IQ ÷ 单任务平均价格，仅用于同一公开任务集内的相对比较。</p>
-          <SourceCaption href={CODEX_RADAR_INTELLIGENCE_URL} label="Codex Radar · intelligence-efficiency.json" />
+          <SourceCaption href={CODEX_RADAR_URL} label="Codex Radar" />
         </section>
 
         <footer>
@@ -337,7 +356,12 @@ export default function Dashboard() {
             {data?.sources.filter((source) => source.key !== "quota" && source.name !== "Codex Reset Radar").map((source) => {
               const state = requestFailureState ?? freshnessState(data, source.dataUpdatedAt ?? data.generatedAt, source.key, freshnessHours(source.key));
               return (
-                <a href={source.url} target="_blank" rel="noreferrer" key={source.name}>
+                <a
+                  href={source.key === "model" ? CODEX_RADAR_URL : source.url}
+                  target="_blank"
+                  rel="noreferrer"
+                  key={source.name}
+                >
                   <i className={sourceIndicatorClass(state)} aria-hidden="true" />{source.name} · {freshnessLabel(state)} ↗
                 </a>
               );
