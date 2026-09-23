@@ -96,7 +96,9 @@ function modelColor(id: string) {
 }
 
 function shortModelLabel(label: string) {
-  return label.replace(/^GPT-(?:5\.6|6)\s+/i, "");
+  return label
+    .replace(/^GPT-6\s+Luna\b/i, "6 Luna")
+    .replace(/^GPT-(?:5\.6|6)\s+/i, "");
 }
 
 function latestModelPoint(series: ModelTrendSeries): ModelTrendPoint | null {
