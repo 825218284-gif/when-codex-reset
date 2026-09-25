@@ -5,6 +5,36 @@ import type { ModelTrendPoint, ModelTrendSeries, ResetBriefing } from "./lib/bri
 
 const CODEX_RESETS_URL = "https://codex-resets.com/";
 const CODEX_RADAR_URL = "https://codexradar.com/";
+const DEEPSEEK_PRICING_URL = "https://api-docs.deepseek.com/zh-cn/quick_start/pricing";
+const BIGMODEL_PRICING_URL = "https://open.bigmodel.cn/pricing";
+const MIMO_PLATFORM_URL = "https://mimo.xiaomi.com";
+
+const apiPriceRows = [
+  {
+    model: "DeepSeek V4.1 Flash",
+    inputMiss: "¥2 高峰 / ¥1 空闲",
+    inputHit: "¥0.04 高峰 / ¥0.02 空闲",
+    output: "¥8 高峰 / ¥4 空闲",
+    note: "高峰为北京时间工作日 9–12、14–18，空闲时段半价",
+    source: DEEPSEEK_PRICING_URL,
+  },
+  {
+    model: "GLM 5.3 Flash",
+    inputMiss: "¥0.8",
+    inputHit: "¥0.23",
+    output: "¥2.8",
+    note: "智谱 BigModel 平台标准价",
+    source: BIGMODEL_PRICING_URL,
+  },
+  {
+    model: "MiMo V2.6 Flash",
+    inputMiss: "¥1",
+    inputHit: "约 99% 缓存折扣",
+    output: "¥2",
+    note: "海外版 $0.14 输入 / $0.28 输出，沿用 V2.5 定价",
+    source: MIMO_PLATFORM_URL,
+  },
+];
 
 type FreshnessState = "fresh" | "stale" | "cached" | "unavailable" | "loading";
 
@@ -348,6 +378,43 @@ export default function Dashboard() {
           ) : <div className="empty-state">等待模型数据。</div>}
           <p className="chart-note">性价比 = IQ ÷ 单任务平均价格，仅用于同一公开任务集内的相对比较。</p>
           <SourceCaption href={CODEX_RADAR_URL} label="Codex Radar" />
+        </section>
+
+        <section className="chart-section api-price-section" aria-labelledby="api-price-title">
+          <div className="section-heading chart-heading">
+            <div>
+              <p className="eyebrow">API PRICING</p>
+              <h2 id="api-price-title">API 价格速览</h2>
+            </div>
+          </div>
+          <p className="model-intro">主流平价模型的官网公开标准价（人民币，每百万 tokens），人工查询于 2026 年 9 月；价格可能随时调整，以官方页面为准。</p>
+          <div className="api-price-card">
+            <table className="api-table">
+              <thead>
+                <tr>
+                  <th scope="col">模型</th>
+                  <th scope="col">输入（缓存未命中）</th>
+                  <th scope="col">输入（缓存命中）</th>
+                  <th scope="col">输出</th>
+                  <th scope="col">备注</th>
+                </tr>
+              </thead>
+              <tbody>
+                {apiPriceRows.map((row) => (
+                  <tr key={row.model}>
+                    <th scope="row" data-label="模型">{row.model}</th>
+                    <td data-label="输入（缓存未命中）">{row.inputMiss}</td>
+                    <td data-label="输入（缓存命中）">{row.inputHit}</td>
+                    <td data-label="输出">{row.output}</td>
+                    <td data-label="备注">{row.note}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+          <p className="source-caption">
+            价格来源：<a href={DEEPSEEK_PRICING_URL} target="_blank" rel="noreferrer">DeepSeek 官方定价 ↗</a> · <a href={BIGMODEL_PRICING_URL} target="_blank" rel="noreferrer">智谱 BigModel ↗</a> · <a href={MIMO_PLATFORM_URL} target="_blank" rel="noreferrer">小米 MiMo 开放平台 ↗</a>
+          </p>
         </section>
 
         <footer>

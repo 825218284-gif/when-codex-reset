@@ -48,6 +48,10 @@ test("server-renders the public dashboard shell", async () => {
   assert.doesNotMatch(html, /未来 48 小时重置可能性/);
   assert.match(html, /额度重置时间轴/);
   assert.doesNotMatch(html, /额度雷达|公开 7d 额度/);
+  assert.match(html, /API 价格速览/);
+  assert.match(html, /DeepSeek V4\.1 Flash/);
+  assert.match(html, /GLM 5\.3 Flash/);
+  assert.match(html, /MiMo V2\.6 Flash/);
   assert.doesNotMatch(html, /codex-preview|Building your site|Starter Project/i);
 });
 

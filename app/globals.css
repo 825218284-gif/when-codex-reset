@@ -139,6 +139,14 @@ main::before {
 
 .chart-heading { padding-top: 1px; }
 .chart-note { max-width: 690px; margin: 12px 3px 0; color: #655b50; font-size: 10px; font-weight: 700; line-height: 1.55; }
+.api-price-card { margin-top: 19px; overflow-x: auto; border: 3px solid var(--line); border-radius: 17px 20px 16px 19px; background: #fffdf7; box-shadow: 4px 5px 0 var(--shadow); }
+.api-table { width: 100%; min-width: 680px; border-collapse: collapse; }
+.api-table th, .api-table td { padding: 13px 16px; border-bottom: 2px solid rgba(41, 35, 30, .34); text-align: left; white-space: nowrap; }
+.api-table thead th { color: #5c5042; font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace; font-size: 10px; font-weight: 800; letter-spacing: .06em; }
+.api-table tbody th { color: var(--ink); font-size: 14px; font-weight: 900; }
+.api-table tbody td { color: var(--ink); font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace; font-size: 12px; font-weight: 900; }
+.api-table tbody td:last-child { color: #5e554b; font-family: inherit; font-size: 11px; font-weight: 750; white-space: normal; }
+.api-table tbody tr:last-child th, .api-table tbody tr:last-child td { border-bottom: 0; }
 
 .model-section { padding-top: 31px; }
 .model-intro { margin: 15px 2px 0; color: #4e4941; font-size: 11px; font-weight: 700; line-height: 1.55; }
@@ -286,6 +294,8 @@ body {
 .timeline time small,
 .section-heading span,
 .empty-state,
+.api-table thead th,
+.api-table tbody td:last-child,
 .chart-note,
 .model-intro,
 .model-card-label,
@@ -306,6 +316,9 @@ footer small { color: var(--muted); }
 .timeline-node span { background: var(--mint); }
 .timeline li.is-latest .timeline-node { background: var(--yellow); }
 .timeline li.is-latest .timeline-node span { background: #10152f; }
+
+.api-price-card { border-color: #6688ed; background: rgba(10, 18, 51, .92); box-shadow: 4px 5px 0 var(--shadow), 0 0 16px rgba(75, 107, 231, .13); }
+.api-table th, .api-table td { border-bottom-color: rgba(131, 163, 255, .22); }
 
 .model-card { border-color: #5979dc; color: var(--ink); background: rgba(12, 21, 57, .96); box-shadow: 4px 5px 0 var(--shadow), 0 0 13px rgba(80, 106, 226, .13); }
 .model-card::before { border-bottom-color: #182757; }
