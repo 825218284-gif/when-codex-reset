@@ -82,20 +82,20 @@ test("GitHub Pages build contains the dashboard and a usable data snapshot", asy
   assert.ok(Array.isArray(snapshot.sources) && snapshot.sources.length >= 2);
   assert.ok(snapshot.sources.every((source) => /^https:\/\//.test(source.url)));
   assert.equal(snapshot.sources.find((source) => source.key === "quota")?.url, "https://codexradar.com/current.json");
-  assert.equal(snapshot.sources.find((source) => source.key === "model")?.url, "https://codexradar.com/data/intelligence-efficiency.json");
+  assert.equal(snapshot.sources.find((source) => source.key === "model")?.url, "https://llm-stats.com/");
   assert.ok(snapshot.sources.every((source) => typeof source.stale === "boolean"));
   assert.ok(Array.isArray(snapshot.history) && snapshot.history.length === 4);
   assert.ok(Array.isArray(snapshot.quotaSnapshot) && snapshot.quotaSnapshot.length > 0);
   assert.ok(Array.isArray(snapshot.quotaTrends) && snapshot.quotaTrends.length > 0);
-  assert.equal(snapshot.modelTrends.length, 19);
+  assert.equal(snapshot.modelTrends.length, 5);
   assert.deepEqual(
     snapshot.modelTrends.map((series) => series.id),
     [
-      "gpt_6_astra_ultra", "gpt_6_astra_max", "gpt_6_astra_xhigh", "gpt_6_astra_high", "gpt_6_astra_medium", "gpt_6_astra_low",
-      "gpt_56_sol_ultra", "gpt_56_sol_max", "gpt_56_sol_xhigh", "gpt_56_sol_high", "gpt_56_sol_medium", "gpt_56_sol_low",
-      "gpt_56_luna_max", "gpt_56_luna_xhigh", "gpt_56_luna_high",
-      "glm_5_3_flash_max", "glm_5_3_flash_high",
-      "dsh_deepseek_v4_flash_max", "dsh_deepseek_v4_flash_high",
+      "gpt_6_astra",
+      "gpt_61_sol",
+      "gpt_6_luna",
+      "glm_5_3_flash",
+      "deepseek_v4_1_flash",
     ],
   );
 });

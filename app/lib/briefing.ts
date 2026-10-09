@@ -52,10 +52,14 @@ export interface QuotaSnapshotRow {
 
 export interface ModelTrendPoint {
   at: string;
+  /** Average normalized score across the model's public benchmarks (0–100). */
   score: number | null;
-  cost: number | null;
-  value: number | null;
-  duration: string | null;
+  /** Official API input price in USD per million tokens. */
+  inputPrice: number | null;
+  /** Official API output price in USD per million tokens. */
+  outputPrice: number | null;
+  /** Advertised context window in tokens. */
+  contextWindow: number | null;
 }
 
 export interface ModelTrendSeries {
@@ -83,25 +87,11 @@ export interface ResetBriefing {
 }
 
 export const expectedModelIds = [
-  "gpt_6_astra_ultra",
-  "gpt_6_astra_max",
-  "gpt_6_astra_xhigh",
-  "gpt_6_astra_high",
-  "gpt_6_astra_medium",
-  "gpt_6_astra_low",
-  "gpt_56_sol_ultra",
-  "gpt_56_sol_max",
-  "gpt_56_sol_xhigh",
-  "gpt_56_sol_high",
-  "gpt_56_sol_medium",
-  "gpt_56_sol_low",
-  "gpt_56_luna_max",
-  "gpt_56_luna_xhigh",
-  "gpt_56_luna_high",
-  "glm_5_3_flash_max",
-  "glm_5_3_flash_high",
-  "dsh_deepseek_v4_flash_max",
-  "dsh_deepseek_v4_flash_high",
+  "gpt_6_astra",
+  "gpt_61_sol",
+  "gpt_6_luna",
+  "glm_5_3_flash",
+  "deepseek_v4_1_flash",
 ] as const;
 
 export const expectedQuotaTiers = ["20x Pro", "5x Pro", "Plus"] as const;
@@ -281,7 +271,7 @@ export function mergeBriefingSnapshots(
         : fallbackSource("quota", next, previous, hasQuotaData(previous), "额度源不可用或数据时间倒退，沿用上次成功数据。"),
       modelAccepted
         ? liveSource("model", next)
-        : fallbackSource("model", next, previous, hasCompleteModelSet(previous.modelTrends), `模型源不可用、数据时间倒退或未返回完整 ${expectedModelIds.length} 个模型，沿用上次完整数据。`),
+        : fallbackSource("model", next, previous, hasCompleteModelSet(previous.modelTrends), `模型源不可用或未返回完整 ${expectedModelIds.length} 个模型，沿用上次完整数据。`),
     ],
     verdict: resetAccepted ? next.verdict : previous.verdict,
     verdictDetail: resetAccepted ? next.verdictDetail : previous.verdictDetail,

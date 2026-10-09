@@ -150,21 +150,13 @@ main::before {
 
 .model-section { padding-top: 31px; }
 .model-intro { margin: 15px 2px 0; color: #4e4941; font-size: 11px; font-weight: 700; line-height: 1.55; }
-.model-card-grid { display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); gap: 16px 14px; margin-top: 19px; }
-.model-card-grid > .model-card:nth-child(18) { grid-column: 3; }
+.model-card-grid { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 16px 14px; margin-top: 19px; }
 .model-card { position: relative; display: grid; grid-template-columns: minmax(0, 1.5fr) minmax(78px, 1fr); min-height: 112px; overflow: hidden; padding: 0; border: 2px solid var(--line); border-radius: 14px; color: var(--ink); background: #fffdf7; box-shadow: 4px 5px 0 var(--shadow); text-align: left; --effort-accent: var(--ink); }
-.model-card[data-effort="ultra"] { --effort-accent: #e879f9; }
-.model-card[data-effort="max"] { --effort-accent: #b39cff; }
-.model-card[data-effort="xhigh"] { --effort-accent: #4ade80; }
-.model-card[data-effort="high"] { --effort-accent: #fbbf24; }
-.model-card[data-effort="medium"] { --effort-accent: #f87171; }
-.model-card[data-effort="low"] { --effort-accent: #67e8f9; }
 .model-card::before { position: absolute; top: 0; right: 0; left: 0; height: 8px; border-bottom: 2px solid var(--line); background: var(--model-color); content: ""; }
 .model-card-main { display: flex; min-width: 0; flex-direction: column; justify-content: space-between; padding: 20px 14px 14px; }
 .model-card-label { display: flex; align-items: center; flex-wrap: wrap; gap: 2px 5px; color: #4d463e; font-size: 13px; font-weight: 900; letter-spacing: -.02em; line-height: 1.25; }
 .model-card-icon { font-size: 14px; line-height: 1; }
 .model-card-icon.is-zai { display: inline-flex; align-items: center; justify-content: center; width: 16px; height: 16px; border-radius: 4px; color: #10152f; background: #fff; font-size: 10.5px; font-weight: 900; letter-spacing: 0; }
-.model-card-effort { color: var(--effort-accent); font-style: normal; }
 .model-card-score { color: var(--effort-accent); font-size: clamp(30px, 2.3vw, 42px); font-weight: 950; letter-spacing: -.08em; line-height: .82; }
 .model-card-meta { display: grid; min-width: 0; grid-template-rows: 1fr 1fr 1fr; border-left: 2px solid color-mix(in srgb, var(--effort-accent) 46%, rgba(126, 145, 195, .58)); color: #514a42; font-size: 11px; font-weight: 850; text-align: center; }
 .model-card-meta b,
@@ -191,8 +183,8 @@ footer small { color: #6a5f52; font-family: ui-monospace, SFMono-Regular, Menlo,
 .footer-status { color: var(--muted); font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace; font-size: 11px; }
 
 @media (max-width: 1280px) {
-  .model-card-grid { grid-template-columns: repeat(4, minmax(0, 1fr)); }
-  .model-card-grid > .model-card:nth-child(18) { grid-column: auto; }
+  .model-card-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+  .model-card-grid > .model-card:nth-child(4) { grid-column: 2; }
 }
 
 @media (max-width: 720px) {
@@ -224,6 +216,7 @@ footer small { color: #6a5f52; font-family: ui-monospace, SFMono-Regular, Menlo,
   .timeline time strong { font-size: 13px; }
   .model-section { padding-top: 23px; }
   .model-card-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
+  .model-card-grid > .model-card:nth-child(4) { grid-column: auto; }
   .model-card { min-height: 104px; border-width: 2px; box-shadow: 3px 4px 0 var(--shadow); }
   .model-card-main { padding: 17px 10px 12px; }
   .model-card-score { font-size: clamp(28px, 8vw, 36px); }
@@ -244,7 +237,6 @@ footer small { color: #6a5f52; font-family: ui-monospace, SFMono-Regular, Menlo,
   .section-heading h2 { font-size: 28px; }
 
   .model-card-grid { grid-template-columns: minmax(0, 1fr); gap: 11px; }
-  .model-card-grid > .model-card:nth-child(18) { grid-column: auto; }
   .model-card { grid-template-columns: minmax(0, 1fr) minmax(94px, .72fr); min-height: 112px; }
   .model-card-main { padding: 20px 14px 13px; }
   .model-card-score { font-size: clamp(35px, 12vw, 45px); }

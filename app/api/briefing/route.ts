@@ -13,11 +13,13 @@ export const runtime = "edge";
 export const dynamic = "force-dynamic";
 
 const CODEX_RADAR_API = "https://codexradar.com/current.json";
-const CODEX_RADAR_INTELLIGENCE_API = "https://codexradar.com/data/intelligence-efficiency.json";
 const CODEX_RESETS_SITE = "https://codex-resets.com/";
+const LLM_STATS_API = "https://llm-stats.com/api/models";
+const LLM_STATS_SITE = "https://llm-stats.com/";
 const SOURCE_TIMEOUT_MS = 15_000;
 const CODEX_RADAR_HOSTS = new Set(["codexradar.com", "www.codexradar.com"]);
 const RESET_PAGE_HOSTS = new Set(["codex-resets.com", "www.codex-resets.com"]);
+const LLM_STATS_HOSTS = new Set(["llm-stats.com"]);
 const RESET_LINK_HOSTS = new Set([
   ...RESET_PAGE_HOSTS,
   "x.com",
@@ -150,68 +152,59 @@ export function parseCodexResets(html: string) {
   };
 }
 
-const intelligenceConfigurations = [
-  { id: "gpt_6_astra_ultra", model: "gpt-6-astra", effort: "ultra", label: "GPT-6 Astra ultra" },
-  { id: "gpt_6_astra_max", model: "gpt-6-astra", effort: "max", label: "GPT-6 Astra max" },
-  { id: "gpt_6_astra_xhigh", model: "gpt-6-astra", effort: "xhigh", label: "GPT-6 Astra xhigh" },
-  { id: "gpt_6_astra_high", model: "gpt-6-astra", effort: "high", label: "GPT-6 Astra high" },
-  { id: "gpt_6_astra_medium", model: "gpt-6-astra", effort: "medium", label: "GPT-6 Astra medium" },
-  { id: "gpt_6_astra_low", model: "gpt-6-astra", effort: "low", label: "GPT-6 Astra low" },
-  { id: "gpt_56_sol_ultra", model: "gpt-6-sol", effort: "ultra", label: "6.1 Sol ultra" },
-  { id: "gpt_56_sol_max", model: "gpt-6-sol", effort: "max", label: "6.1 Sol max" },
-  { id: "gpt_56_sol_xhigh", model: "gpt-6-sol", effort: "xhigh", label: "6.1 Sol xhigh" },
-  { id: "gpt_56_sol_high", model: "gpt-6-sol", effort: "high", label: "6.1 Sol high" },
-  { id: "gpt_56_sol_medium", model: "gpt-6-sol", effort: "medium", label: "6.1 Sol medium" },
-  { id: "gpt_56_sol_low", model: "gpt-6-sol", effort: "low", label: "6.1 Sol low" },
-  { id: "gpt_56_luna_max", model: "gpt-6-luna", effort: "max", label: "GPT-6 Luna max" },
-  { id: "gpt_56_luna_xhigh", model: "gpt-6-luna", effort: "xhigh", label: "GPT-6 Luna xhigh" },
-  { id: "gpt_56_luna_high", model: "gpt-6-luna", effort: "high", label: "GPT-6 Luna high" },
-  { id: "glm_5_3_flash_max", model: "glm-5.3-flash", effort: "max", label: "GLM 5.3 Flash max" },
-  { id: "glm_5_3_flash_high", model: "glm-5.3-flash", effort: "high", label: "GLM 5.3 Flash high" },
-  { id: "dsh_deepseek_v4_flash_max", model: "dsh-deepseek-v4-flash", effort: "max", label: "DeepSeek·dsh max" },
-  { id: "dsh_deepseek_v4_flash_high", model: "dsh-deepseek-v4-flash", effort: "high", label: "DeepSeek·dsh high" },
+const llmStatsModels = [
+  { id: "gpt_6_astra", slug: "gpt-6-astra", label: "GPT-6 Astra" },
+  { id: "gpt_61_sol", slug: "gpt-6.1-sol", label: "GPT-6.1 Sol" },
+  { id: "gpt_6_luna", slug: "gpt-6-luna", label: "GPT-6 Luna" },
+  { id: "glm_5_3_flash", slug: "glm-5.3-flash", label: "GLM 5.3 Flash" },
+  { id: "deepseek_v4_1_flash", slug: "deepseek-v4.1-flash", label: "DeepSeek V4.1 Flash" },
 ] as const;
 
-function intelligencePoint(raw: UnknownRecord, at: string): ModelTrendPoint | null {
-  const score = asNumber(raw.iq);
-  if (!at || score === null) return null;
-  const cost = asNumber(raw.average_price_usd);
-  const minutes = asNumber(raw.average_minutes);
-  return {
-    at,
-    score,
-    cost,
-    value: cost !== null && cost > 0 ? score / cost : null,
-    duration: minutes === null ? null : `${Math.round(minutes)}分钟`,
-  };
+type LlmStatsModel = {
+  id: string;
+  slug: string;
+  label: string;
+  detail: UnknownRecord | null;
+};
+
+/** Fetch every tracked model's llm-stats detail page; a failed model yields a null detail. */
+async function fetchLlmStatsModels(): Promise<LlmStatsModel[]> {
+  const settled = await Promise.allSettled(
+    llmStatsModels.map(({ slug }) => fetchJsonSource(`${LLM_STATS_API}/${slug}`, LLM_STATS_HOSTS)),
+  );
+  return llmStatsModels.map(({ id, slug, label }, index) => {
+    const result = settled[index];
+    return {
+      id,
+      slug,
+      label,
+      detail: result.status === "fulfilled" ? result.value : null,
+    };
+  });
 }
 
-function collectIntelligenceModelTrends(payload: UnknownRecord): ModelTrendSeries[] {
-  const latestAt = asString(payload.source_updated_at);
-  const latestRows = Array.isArray(payload.points) ? payload.points.map(asRecord) : [];
-  const history = Array.isArray(payload.history) ? payload.history.map(asRecord) : [];
-
-  return intelligenceConfigurations.flatMap((configuration) => {
-    const byTime = new Map<string, ModelTrendPoint>();
-    for (const snapshot of history) {
-      const at = asString(snapshot.at);
-      const row = (Array.isArray(snapshot.points) ? snapshot.points : [])
-        .map(asRecord)
-        .find((candidate) => asString(candidate.model) === configuration.model
-          && asString(candidate.effort) === configuration.effort);
-      const point = row ? intelligencePoint(row, at) : null;
-      if (point) byTime.set(point.at, point);
-    }
-
-    const latest = latestRows.find((candidate) => asString(candidate.model) === configuration.model
-      && asString(candidate.effort) === configuration.effort);
-    const current = latest ? intelligencePoint(latest, latestAt) : null;
-    if (current) byTime.set(current.at, current);
-
-    const points = [...byTime.values()]
-      .sort((a, b) => a.at.localeCompare(b.at))
-      .slice(-10);
-    return points.length ? [{ id: configuration.id, label: configuration.label, points }] : [];
+function collectLlmStatsModels(models: LlmStatsModel[]): ModelTrendSeries[] {
+  const at = new Date().toISOString();
+  return models.flatMap(({ id, label, detail }) => {
+    if (!detail) return [];
+    const benchmarks = Array.isArray(detail.benchmarks) ? detail.benchmarks.map(asRecord) : [];
+    const normalized = benchmarks
+      .map((benchmark) => asNumber(benchmark.normalized_score))
+      .filter((score): score is number => score !== null && score > 0 && score <= 1);
+    if (!normalized.length) return [];
+    const score = Math.round((normalized.reduce((sum, value) => sum + value, 0) / normalized.length) * 1000) / 10;
+    // Detail payloads carry pricing and limits on the first listed provider.
+    const provider = (Array.isArray(detail.providers) ? detail.providers.map(asRecord) : [])[0] ?? asRecord({});
+    const pricing = asRecord(provider.pricing);
+    const limits = asRecord(provider.limits);
+    const point: ModelTrendPoint = {
+      at,
+      score,
+      inputPrice: asNumber(pricing.input_per_million),
+      outputPrice: asNumber(pricing.output_per_million),
+      contextWindow: asNumber(limits.max_input_tokens),
+    };
+    return [{ id, label, points: [point] }];
   });
 }
 
@@ -305,7 +298,7 @@ function dataIsOlderThan(value: string | null, maxAgeMs: number) {
 
 export async function GET() {
   const startedAt = new Date().toISOString();
-  const [resetResult, codexResult, intelligenceResult] = await Promise.allSettled([
+  const [resetResult, codexResult, llmStatsResult] = await Promise.allSettled([
     fetchTextSource(
       CODEX_RESETS_SITE,
       RESET_PAGE_HOSTS,
@@ -315,7 +308,7 @@ export async function GET() {
       },
     ).then(parseCodexResets),
     fetchJsonSource(CODEX_RADAR_API, CODEX_RADAR_HOSTS),
-    fetchJsonSource(CODEX_RADAR_INTELLIGENCE_API, CODEX_RADAR_HOSTS),
+    fetchLlmStatsModels(),
   ]);
 
   const parsedResets = resetResult.status === "fulfilled" ? resetResult.value : null;
@@ -323,20 +316,18 @@ export async function GET() {
     ? parsedResets
     : null;
   const codexRadar = codexResult.status === "fulfilled" ? codexResult.value : null;
-  const intelligence = intelligenceResult.status === "fulfilled" ? intelligenceResult.value : null;
-  const intelligenceModels = intelligence ? collectIntelligenceModelTrends(intelligence) : [];
-  const completeIntelligence = hasCompleteModelSet(intelligenceModels);
+  const llmStatsModelsFetched = llmStatsResult.status === "fulfilled" ? llmStatsResult.value : [];
+  const modelTrends = collectLlmStatsModels(llmStatsModelsFetched);
+  const completeModels = hasCompleteModelSet(modelTrends);
   const quotaUpdatedAt = codexRadar
     ? asString(asRecord(asRecord(codexRadar.model_iq).quota_radar).updated_at) || null
     : null;
   const quotaSnapshot = codexRadar ? collectQuotaSnapshot(codexRadar) : [];
   const quotaTrends = codexRadar ? collectQuotaTrends(codexRadar) : [];
   const quotaLive = Boolean(quotaUpdatedAt) && hasCompleteQuotaData(quotaSnapshot, quotaTrends);
-  const modelUpdatedAt = completeIntelligence
-    ? asString(intelligence?.source_updated_at) || null
-    : null;
-  const successfulSourceCount = Number(Boolean(codexResets)) + Number(quotaLive) + Number(completeIntelligence);
   const completedAt = new Date().toISOString();
+  const modelUpdatedAt = completeModels ? completedAt : null;
+  const successfulSourceCount = Number(Boolean(codexResets)) + Number(quotaLive) + Number(completeModels);
   const briefing: ResetBriefing = {
     generatedAt: successfulSourceCount ? completedAt : "",
     sources: [
@@ -368,18 +359,16 @@ export async function GET() {
       },
       {
         key: "model",
-        name: "Codex 雷达 · 模型",
-        url: CODEX_RADAR_INTELLIGENCE_API,
-        status: completeIntelligence ? "live" : "unavailable",
-        lastSuccessAt: completeIntelligence ? completedAt : null,
+        name: "LLM Stats · 模型",
+        url: LLM_STATS_SITE,
+        status: completeModels ? "live" : "unavailable",
+        lastSuccessAt: completeModels ? completedAt : null,
         dataUpdatedAt: modelUpdatedAt,
         fallback: false,
-        stale: !completeIntelligence || dataIsOlderThan(modelUpdatedAt, 6 * 60 * 60 * 1000),
-        detail: completeIntelligence
-          ? `完整 ${intelligenceConfigurations.length} 个模型已成功读取。`
-          : intelligenceResult.status === "fulfilled"
-            ? `模型数据不完整（${intelligenceModels.length}/${intelligenceConfigurations.length}），不会覆盖完整快照。`
-            : failureDetail(intelligenceResult, "模型数据不可用。"),
+        stale: !completeModels,
+        detail: completeModels
+          ? `完整 ${llmStatsModels.length} 个模型已成功读取。`
+          : `模型数据不完整（${modelTrends.length}/${llmStatsModels.length}），不会覆盖完整快照。`,
       },
     ],
     verdict: codexResets?.verdict ?? "暂时无法核验",
@@ -392,7 +381,7 @@ export async function GET() {
     quotaSnapshot: quotaLive ? quotaSnapshot : [],
     quotaTrends: quotaLive ? quotaTrends : [],
     modelUpdatedAt,
-    modelTrends: completeIntelligence ? intelligenceModels : [],
+    modelTrends: completeModels ? modelTrends : [],
   };
 
   return Response.json(briefing, {

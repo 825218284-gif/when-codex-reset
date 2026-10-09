@@ -8,7 +8,8 @@
 ## 数据来源
 
 - 重置时间：[Codex Resets](https://codex-resets.com/)
-- 模型数据：[Codex Radar](https://codexradar.com/)
+- 模型基准分与 API 价格：[LLM Stats](https://llm-stats.com/)
+- 模型官方定价参考：DeepSeek / 智谱 BigModel / 小米 MiMo 开放平台
 
 这些数据是公开观察与汇总，不代表个人账户的实际余额。页面会标注来源状态和数据更新时间；来源暂时不可用时保留最近一次完整快照，不会用不完整数据覆盖线上结果。
 

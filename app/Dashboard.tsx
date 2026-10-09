@@ -5,6 +5,7 @@ import type { ModelTrendPoint, ModelTrendSeries, ResetBriefing } from "./lib/bri
 
 const CODEX_RESETS_URL = "https://codex-resets.com/";
 const CODEX_RADAR_URL = "https://codexradar.com/";
+const LLM_STATS_URL = "https://llm-stats.com/";
 const DEEPSEEK_PRICING_URL = "https://api-docs.deepseek.com/zh-cn/quick_start/pricing";
 const BIGMODEL_PRICING_URL = "https://open.bigmodel.cn/pricing";
 const MIMO_PLATFORM_URL = "https://mimo.xiaomi.com";
@@ -110,25 +111,12 @@ function briefingUrl(bustCache: boolean) {
 }
 
 function modelColor(id: string) {
-  if (id.startsWith("gpt_6_astra_ultra") || id.startsWith("gpt_6_astra_max") || id.startsWith("gpt_6_astra_xhigh")) return "#35d6ee";
-  if (id.startsWith("gpt_6_astra_")) return "#0e93a8";
-  if (id.includes("_sol_ultra") || id.includes("_sol_max") || id.includes("_sol_xhigh")) return "#f5c518";
-  if (id.includes("_sol_high")) return "#e98500";
-  if (id.includes("_sol_medium")) return "#a64b16";
-  if (id.includes("_sol_low")) return "#804016";
-  if (id.includes("_luna_max") || id.includes("_luna_xhigh")) return "#ff6f8a";
-  if (id.includes("_luna_high") || id.includes("_luna_medium") || id.includes("_luna_low")) return "#e61f4d";
-  if (id.startsWith("glm_5_3_flash_max")) return "#b39cff";
-  if (id.startsWith("glm_5_3_flash_")) return "#7f57e0";
-  if (id.startsWith("dsh_deepseek_v4_flash_max")) return "#9fc4b4";
-  if (id.startsWith("dsh_deepseek_v4_flash_")) return "#5f8f79";
+  if (id.includes("astra")) return "#35d6ee";
+  if (id.includes("sol")) return "#f5c518";
+  if (id.includes("luna")) return "#e61f4d";
+  if (id.includes("deepseek")) return "#5f8f79";
+  if (id.includes("glm")) return "#8b6cf0";
   return "#806ef2";
-}
-
-function shortModelLabel(label: string) {
-  return label
-    .replace(/^GPT-6\s+Luna\b/i, "6 Luna")
-    .replace(/^GPT-(?:5\.6|6)\s+/i, "");
 }
 
 function latestModelPoint(series: ModelTrendSeries): ModelTrendPoint | null {
@@ -176,23 +164,6 @@ function formatResetTimelineDate(value: string) {
   return { day: value, minute: "" };
 }
 
-function formatValue(value: number, unit: string) {
-  if (unit.startsWith("USD")) {
-    return new Intl.NumberFormat("en-US", {
-      style: "currency",
-      currency: "USD",
-      minimumFractionDigits: 2,
-      maximumFractionDigits: 2,
-    }).format(value);
-  }
-  return value.toFixed(1);
-}
-
-function formatCardCost(value: number | null) {
-  if (value === null) return "—";
-  return `$${value.toFixed(Math.abs(value) < 0.1 ? 3 : 1)}`;
-}
-
 function SourceCaption({ href, label }: { href: string; label: string }) {
   return (
     <p className="source-caption">
@@ -202,45 +173,46 @@ function SourceCaption({ href, label }: { href: string; label: string }) {
 }
 
 function modelIcon(id: string) {
-  if (id.includes("_sol_")) return { text: "☀️", zai: false };
-  if (id.includes("_luna_")) return { text: "🌙", zai: false };
-  if (id.startsWith("gpt_6_astra")) return { text: "⭐", zai: false };
-  if (id.startsWith("dsh_")) return { text: "🐋", zai: false };
-  if (id.startsWith("glm_")) return { text: "Z", zai: true };
+  if (id.includes("sol")) return { text: "☀️", zai: false };
+  if (id.includes("luna")) return { text: "🌙", zai: false };
+  if (id.includes("astra")) return { text: "⭐", zai: false };
+  if (id.includes("deepseek")) return { text: "🐋", zai: false };
+  if (id.includes("glm")) return { text: "Z", zai: true };
   return { text: "✦", zai: false };
 }
 
-function modelEffort(id: string) {
-  return id.slice(id.lastIndexOf("_") + 1);
+function formatContextWindow(tokens: number | null | undefined) {
+  if (!tokens) return "—";
+  const millions = parseFloat((tokens / 1_000_000).toFixed(2));
+  return `${millions}M 上下文`;
 }
 
 function ModelCard({ series }: { series: ModelTrendSeries }) {
   const latest = latestModelPoint(series);
   const color = modelColor(series.id);
   const icon = modelIcon(series.id);
-  const effort = modelEffort(series.id);
-  const label = shortModelLabel(series.label).replace(new RegExp(`\\s*${effort}$`), "");
-  const score = latest?.score === null || latest?.score === undefined ? "—" : formatValue(latest.score, "IQ");
-  const price = formatCardCost(latest?.cost ?? null);
-  const duration = latest?.duration ?? "时间待来源补全";
-  const value = latest?.value === null || latest?.value === undefined
+  const score = latest?.score === null || latest?.score === undefined ? "—" : latest.score.toFixed(1);
+  const inputPrice = latest?.inputPrice === null || latest?.inputPrice === undefined
     ? "—"
-    : `${formatValue(latest.value, "IQ / USD")} IQ/$`;
+    : `输入 $${latest.inputPrice}/M`;
+  const outputPrice = latest?.outputPrice === null || latest?.outputPrice === undefined
+    ? "—"
+    : `输出 $${latest.outputPrice}/M`;
+  const context = formatContextWindow(latest?.contextWindow);
 
   return (
-    <article className="model-card" data-effort={effort} style={{ "--model-color": color } as CSSProperties}>
+    <article className="model-card" style={{ "--model-color": color, "--effort-accent": color } as CSSProperties}>
       <span className="model-card-main">
         <span className="model-card-label">
           <span className={icon.zai ? "model-card-icon is-zai" : "model-card-icon"} aria-hidden="true">{icon.text}</span>
-          <span className="model-card-name">{label}</span>
-          <em className="model-card-effort">{effort}</em>
+          <span className="model-card-name">{series.label}</span>
         </span>
         <strong className="model-card-score">{score}</strong>
       </span>
       <span className="model-card-meta">
-        <b>{price}</b>
-        <small>{duration}</small>
-        <small>{value}</small>
+        <b>{inputPrice}</b>
+        <small>{outputPrice}</small>
+        <small>{context}</small>
       </span>
     </article>
   );
@@ -361,14 +333,14 @@ export default function Dashboard() {
           <div className="section-heading chart-heading">
             <div>
               <p className="eyebrow">MODEL INTELLIGENCE</p>
-              <h2 id="model-title">模型 IQ、价格与性价比</h2>
+              <h2 id="model-title">模型基准分与 API 价格</h2>
             </div>
             <div className="heading-status">
               <span>{formatSourceUpdatedAt(data?.modelUpdatedAt)} 更新</span>
               <DataStatus state={modelFreshness} />
             </div>
           </div>
-          <p className="model-intro">每张卡片是一种公开测量配置，展示其 IQ、单任务平均价格、平均耗时和性价比。</p>
+          <p className="model-intro">每张卡片是一个模型，综合基准分取其公开基准测试归一化得分的平均值（含厂商自报口径），价格与上下文来自官方 API 标准定价。</p>
           {modelTrends.length ? (
             <div className="model-card-grid" aria-label="模型配置">
               {modelTrends.map((series) => (
@@ -376,8 +348,8 @@ export default function Dashboard() {
               ))}
             </div>
           ) : <div className="empty-state">等待模型数据。</div>}
-          <p className="chart-note">性价比 = IQ ÷ 单任务平均价格，仅用于同一公开任务集内的相对比较。</p>
-          <SourceCaption href={CODEX_RADAR_URL} label="Codex Radar" />
+          <p className="chart-note">综合基准分 = 各公开基准归一化得分（0–1）的平均值 × 100，仅作模型间横向参考；输入/输出价格为官方每百万 tokens 标准价。</p>
+          <SourceCaption href={LLM_STATS_URL} label="LLM Stats" />
         </section>
 
         <section className="chart-section api-price-section" aria-labelledby="api-price-title">

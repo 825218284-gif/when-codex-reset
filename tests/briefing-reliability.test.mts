@@ -7,7 +7,7 @@ function models(at: string, count: number = expectedModelIds.length): ModelTrend
   return expectedModelIds.slice(0, count).map((id) => ({
     id,
     label: id,
-    points: [{ at, score: 90, cost: 3, value: 30, duration: "10分钟" }],
+    points: [{ at, score: 63, inputPrice: 2, outputPrice: 10, contextWindow: 1_000_000 }],
   }));
 }
 
@@ -52,11 +52,11 @@ function briefing(at: string): ResetBriefing {
   };
 }
 
-test("recognizes only the exact complete 19-model intelligence set", () => {
+test("recognizes only the exact complete 5-model intelligence set", () => {
   const complete = models("2026-08-12T00:00:00Z");
-  assert.equal(expectedModelIds.length, 19);
+  assert.equal(expectedModelIds.length, 5);
   assert.equal(hasCompleteModelSet(complete), true);
-  assert.equal(hasCompleteModelSet(complete.slice(0, 12)), false);
+  assert.equal(hasCompleteModelSet(complete.slice(0, 4)), false);
   assert.equal(hasCompleteModelSet([...complete, complete[0]]), false);
   assert.equal(hasCompleteModelSet(complete.map((series, index) => index === 0 ? { ...series, points: [] } : series)), false);
 });
@@ -98,7 +98,7 @@ test("all failed sources retain the published snapshot and its generatedAt", () 
 test("an incomplete intelligence response cannot replace the complete model set", () => {
   const previous = briefing("2026-08-12T00:00:00Z");
   const next = briefing("2026-08-12T01:00:00Z");
-  next.modelTrends = models(next.generatedAt, 12);
+  next.modelTrends = models(next.generatedAt, 4);
 
   const merged = mergeBriefingSnapshots(next, previous);
   assert.deepEqual(merged.modelTrends, previous.modelTrends);
@@ -157,7 +157,7 @@ test("reset parsing sorts events and keeps each title paired with its own time",
   assert.equal(parsed.latestConfirmed?.sourceUrl, "https://codex-resets.com/");
 });
 
-test("the API never substitutes the smaller legacy model collection", async () => {
+test("the API never substitutes a partial llm-stats model collection", async () => {
   const originalFetch = globalThis.fetch;
   globalThis.fetch = async (input) => {
     const url = String(input);
@@ -182,13 +182,13 @@ test("the API never substitutes the smaller legacy model collection", async () =
         },
       });
     }
+    // llm-stats detail with no usable benchmark scores for any model.
     return Response.json({
-      source_updated_at: "2026-08-12T02:00:00Z",
-      points: expectedModelIds.slice(0, 12).map((id) => {
-        const [, , family, effort] = id.split("_");
-        return { model: `gpt-5.6-${family}`, effort, iq: 90, average_price_usd: 2, average_minutes: 10 };
-      }),
-      history: [],
+      model_id: url.split("/").at(-1),
+      inputPrice: 1,
+      outputPrice: 2,
+      context_window: 1_000_000,
+      benchmarks: [{ benchmark_id: "x", normalized_score: null }],
     });
   };
 
